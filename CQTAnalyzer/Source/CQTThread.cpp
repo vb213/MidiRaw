@@ -254,7 +254,7 @@ void CQTThread::run()
                 {
                     cqtCollectorBuffer[cqtCollectorBuffer.size() - k - 1] = cqtBuffer.getSample (k, ii);
                     
-                    if (cqtCollectorBuffer[cqtCollectorBuffer.size() - k - 1] > 0.25)
+                    if ((cqtCollectorBuffer[cqtCollectorBuffer.size() - k - 1] > 0.25) && params.binsPerSemitone > 2)
                         activationIdx = true;
                 }
                 cqtFifo.push (cqtCollectorBuffer.data(), params.K);
@@ -294,13 +294,7 @@ void CQTThread::calculateTuning()
     
     // start from here if maximum isnt at the tuning-bin
     startTuning:
-    
-    // Checks if enough bins are calculated for tuning
-    if (params.binsPerSemitone < 3)
-    {
-        detuningCents = nan("0");
-        return;
-    }
+
     
     int modTuning = tuningBin % params.binsPerSemitone;
     
@@ -325,11 +319,6 @@ void CQTThread::calculateTuning()
         }
     }
     
-    // this formula works for logarithmic values
-    //for (int ii = 0; ii < 3; ++ii)
-      //  summedCqt[ii] = 10 * log10 (summedCqt[ii]);
-    
-
     // shifting tuning-center if above or below the next bin
     if (summedCqt[0] > summedCqt[1])
     {
@@ -345,9 +334,9 @@ void CQTThread::calculateTuning()
     // caluclate frequency offset as fractual-bin
     float frequencyOffset = 0.5 * (summedCqt[0] - summedCqt[2])/(summedCqt[0] + summedCqt[2] - 2 * summedCqt[1]);
     
-    // tuning in this sample
+    // calculate actual tuning frequency
     float newTuning = params.frequencies[0] * exp2 ((tuningBin + frequencyOffset)/(12 * params.binsPerSemitone));
-    //float newTuning = (params.frequencies[tuningBin + 1] - params.frequencies[tuningBin - 1]) * frequencyOffset + params.frequencies[tuningBin];
+    
     
     // some sort of integration to smoothen the results
     if (tuningIterationCounter < maxTuningCounter)

@@ -209,8 +209,8 @@ void CqtanalyzerAudioProcessorEditor::timerCallback()
     const float detuning = cqt->getTuning();
 
     std::string detuningString;
-    
-    if (isnan (detuning))
+
+    if (slBPerOct.getValue() < 36)
         detuningString = "NaN";
     else{
         std::stringstream s;
