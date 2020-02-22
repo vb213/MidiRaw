@@ -103,8 +103,7 @@ cqtFifo (params.K, numberOfBuffersInCQTQueue)
 {
     fftData.resize (2 * params.fftSize);
 
-    fftWindowed.resize (params.ifftSize);
-    ifftDataAbs.resize (params.ifftSize);
+    ifftData.resize (params.ifftSize);
 
     cqtBuffer.setSize (params.K, params.ifftSize);
     cqtCollectorBuffer.resize (params.K);
@@ -205,21 +204,21 @@ void CQTThread::run()
                 {
                     if (ii < winLen)
                     {
-                        fftWindowed[ii] = std::complex<float>(fftData[2 * (ii + windows[k]->position)], fftData[2 * (ii + windows[k]->position) + 1]) * windows[k]->data()[ii];
+                        ifftData[ii] = std::complex<float>(fftData[2 * (ii + windows[k]->position)], fftData[2 * (ii + windows[k]->position) + 1]) * windows[k]->data()[ii];
                     }
                     else
-                        fftWindowed[ii] = 0;
+                        ifftData[ii] = 0;
                 }
 
                 //circshift
-                std::rotate (fftWindowed.begin(), fftWindowed.begin() + round(winLen * 0.5), fftWindowed.end());
+                std::rotate (ifftData.begin(), ifftData.begin() + round(winLen * 0.5), ifftData.end());
                 
 
                 // IFFT
-                ifft.perform (fftWindowed.data(), fftWindowed.data(), true);
+                ifft.perform (ifftData.data(), ifftData.data(), true);
                 
                 for (int ii = 0; ii < params.ifftSize; ++ii)
-                    cqtBuffer.addSample (k, ii, (params.fftSize/params.ifftSize * params.gainFactor * std::abs(fftWindowed.data()[ii])));
+                    cqtBuffer.addSample (k, ii, (params.fftSize/params.ifftSize * params.gainFactor * std::abs(ifftData.data()[ii])));
             }
             
             bool activationIdx = 0;
