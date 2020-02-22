@@ -109,7 +109,7 @@ CqtanalyzerAudioProcessorEditor::CqtanalyzerAudioProcessorEditor (CqtanalyzerAud
     lbGamma.setText ("Gamma", dontSendNotification);
     
     addAndMakeVisible (lbGain);
-    lbGain.setJustification (Justification::bottom);
+    lbGain.setJustification (Justification::centred);
     lbGain.setText ("Gain", dontSendNotification);
     
     addAndMakeVisible (lbTuning);
@@ -190,14 +190,13 @@ void CqtanalyzerAudioProcessorEditor::resized()
     
     
     area.removeFromBottom (sliderSize + labelOffset + 5);
+
+    Rectangle<int> GainArea = area;
     
-    // TODO: Add label for Gain-slider
-    Rectangle<int> slGainArea = area;
-    slGainArea.removeFromBottom (labelOffset + 5);
-    slGain.setBounds (slGainArea.removeFromRight (sliderSize/2));
+    lbGain.setBounds (GainArea.removeFromBottom(labelOffset + 5).removeFromRight(sliderSize/2));
+    slGain.setBounds (GainArea.removeFromRight(sliderSize/2));
     
     area.removeFromRight (sliderSize/2 + 20);
-
     cqtVisualizer.setBounds (area);
 
 }
