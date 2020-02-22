@@ -42,9 +42,8 @@ class CQTThread  :  public ReferenceCountedObject, public Thread
      */
     struct Params
     {
-        Params (const double fs, const float fMin, const float nOctaves, const float B, const float gamma, const float gainInDecibels, const float tuningFreq);
+        Params (const double fs, const float fMin, const float nOctaves, const float B, const float gamma, const float tuningFreq);
         static constexpr int fftOversampling = 2;
-        float gainLinear;
         double sampleRate;
         int fftOrder, fftSize;
         int K;
@@ -78,7 +77,7 @@ public:
 
     using Ptr = ReferenceCountedObjectPtr<CQTThread>;
 
-    CQTThread (const double fs, const float fMin, const float nOctaves, const float B, const float gamma, const float gainInDecibels, const float tuningFreq);
+    CQTThread (const double fs, const float fMin, const float nOctaves, const float B, const float gamma, const float tuningFreq);
     ~CQTThread();
 
     /** Writes samples into queue, which will be processed once enough samples are gathered.

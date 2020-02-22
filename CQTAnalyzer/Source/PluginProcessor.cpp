@@ -53,7 +53,6 @@ CqtanalyzerAudioProcessor::CqtanalyzerAudioProcessor()
     parameters.addParameterListener("nOctaves", this);
     parameters.addParameterListener("bPerOct", this);
     parameters.addParameterListener("gamma", this);
-    parameters.addParameterListener("gain", this);
     parameters.addParameterListener("tuningFreq", this);
 }
 
@@ -93,7 +92,7 @@ void CqtanalyzerAudioProcessor::changeProgramName (int index, const String& newN
 void CqtanalyzerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     // Initialize CQTThread
-    cqt = new CQTThread (sampleRate, *fMin, *nOctaves, *bPerOct, *gamma, *gain, *tuningFreq);
+    cqt = new CQTThread (sampleRate, *fMin, *nOctaves, *bPerOct, *gamma, *tuningFreq);
 }
 
 void CqtanalyzerAudioProcessor::releaseResources()
@@ -130,13 +129,17 @@ bool CqtanalyzerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layou
 void CqtanalyzerAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiBuffer&)
 {
     double sampleRate = getSampleRate();
-        
+       
+    float gainLinear = pow (10, *gain/20.0);
+    buffer.applyGain (gainLinear);
+    
     // Here are the samples pushed into the buffer for QCT analysis
     // TODO: Currently only analyzing left channel --> conversion to momo could be useful
     auto retainedCqt = cqt;
     if (retainedCqt != nullptr)
         retainedCqt->pushSamples (buffer.getReadPointer (0), buffer.getNumSamples());
 
+    buffer.applyGain (1.0/gainLinear);
     
     // TODO: Implement timer-class for a more elegant change of params
     if (paramChanged > 0)
@@ -145,7 +148,7 @@ void CqtanalyzerAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiBuf
             
         if (paramChanged > 10){
             paramChanged = 0;
-            cqt = new CQTThread (sampleRate, *fMin, *nOctaves, *bPerOct, *gamma, *gain, *tuningFreq);
+            cqt = new CQTThread (sampleRate, *fMin, *nOctaves, *bPerOct, *gamma, *tuningFreq);
             
             
             retainedCqt = cqt;

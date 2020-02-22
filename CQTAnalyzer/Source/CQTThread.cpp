@@ -22,15 +22,12 @@
 
 #include "CQTThread.h"
 
-CQTThread::Params::Params (const double fs, const float fMin, const float nOctaves, const float B, const float gamma, const float gainInDecibels, const float tuningFreq)
+CQTThread::Params::Params (const double fs, const float fMin, const float nOctaves, const float B, const float gamma, const float tuningFreq)
 {
     sampleRate = fs;
     bandwidth_max = 0.0f;
     gainFactor = (nOctaves * nOctaves * nOctaves) / 20;  // empirical, can surely be improved
     tuning = tuningFreq;
-    
-    // Gain for Visualtization
-    gainLinear = pow (10, gainInDecibels / 20);
 
     const double Q = 1.0 / (exp2 (1.0 / B) - exp2 (-1.0 / B));
     const double alpha = 1 / Q;
@@ -88,21 +85,16 @@ CQTThread::Params::Params (const double fs, const float fMin, const float nOctav
     ifftSize = nextPowerOfTwo (bandwidth_max / df);
     ifftOrder = log2 (ifftSize);
     
-    // TODO: currently only working with an overlap of 0.5
     float overlapFactor = 0.5;
     
     overlap = round (overlapFactor * blockLength);
     hopsize = ifftSize / fftOversampling / 2;
-    
-    std::cout << "Overlapfactor: " << overlapFactor << "\n";
-    std::cout << "Overlap in samples: " << overlap << "\n";
-    std::cout << "Hopsize: " << hopsize << "\n";
 }
 
 
-CQTThread::CQTThread (const double fs, const float fMin, const float nOctaves, const float B, const float gamma, const float gainInDecibels, const float tuningFreq) :
+CQTThread::CQTThread (const double fs, const float fMin, const float nOctaves, const float B, const float gamma, const float tuningFreq) :
 Thread ("CQT Thread"),
-params (fs, fMin, nOctaves, B, gamma, gainInDecibels, tuningFreq),
+params (fs, fMin, nOctaves, B, gamma, tuningFreq),
 audioBufferFifo (params.blockLength, numberOfBuffersInQueue),
 collector (audioBufferFifo, params.overlap), // second params is overlap (in samples)
 fft (params.fftOrder),
@@ -196,11 +188,8 @@ void CQTThread::run()
             // windowing each block in time-domain for smoother edges
             for (int ii = 0; ii < params.blockLength; ++ii)
             {
-                fftData.data()[ii] = fftData.data()[ii] * hannWindowForTimedomain[ii] * params.gainLinear;
+                fftData.data()[ii] = fftData.data()[ii] * hannWindowForTimedomain[ii];
             }
-            
-            // Zeropadding --> so in this case circshift
-            // std::rotate (fftData.begin(), fftData.end() - int((params.fftOversampling - 1) * params.blockLength * 0.5), fftData.end());
             
             // RFFT
             fft.performRealOnlyForwardTransform (fftData.data(), false);
