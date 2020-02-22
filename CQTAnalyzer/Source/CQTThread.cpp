@@ -102,7 +102,8 @@ ifft (params.ifftOrder),
 cqtFifo (params.K, numberOfBuffersInCQTQueue)
 {
     fftData.resize (2 * params.fftSize);
-    ifftDataComplex.resize (params.ifftSize);
+
+    fftWindowed.resize (params.ifftSize);
     ifftDataAbs.resize (params.ifftSize);
 
     cqtBuffer.setSize (params.K, params.ifftSize);
@@ -198,40 +199,27 @@ void CQTThread::run()
             for (int k = 0; k < params.K; ++k)
             {
                 int winLen = static_cast<int> (windows[k]->size());
-                fftWindowed.resize (2 * winLen);
                 
-                for (int ii = 0; ii < winLen; ++ii)
-                {
-                    fftWindowed[2 * ii] = fftData[2 * (ii + windows[k]->position)] * windows[k]->data()[ii];  // storing in buffer and applying window - real part
-                    fftWindowed[2 * ii + 1] = fftData[2 * (ii + windows[k]->position) + 1] * windows[k]->data()[ii];  // imaginary part
-                }
-
-                //circshift
-                std::rotate (fftWindowed.begin(), fftWindowed.begin() + 2 * round(winLen * 0.5), fftWindowed.end());
-                
-                // Cast from interleaved to complex
+                // conversion to complex and applying window
                 for (int ii = 0; ii < params.ifftSize; ++ii)
                 {
                     if (ii < winLen)
                     {
-                        ifftDataComplex.data()[ii] = std::complex<float>(fftWindowed[2 * ii], fftWindowed[2 * ii + 1]);
+                        fftWindowed[ii] = std::complex<float>(fftData[2 * (ii + windows[k]->position)], fftData[2 * (ii + windows[k]->position) + 1]) * windows[k]->data()[ii];
                     }
                     else
-                    {
-                        ifftDataComplex.data()[ii] = 0;
-                    }
+                        fftWindowed[ii] = 0;
                 }
+
+                //circshift
+                std::rotate (fftWindowed.begin(), fftWindowed.begin() + round(winLen * 0.5), fftWindowed.end());
                 
 
                 // IFFT
-                ifft.perform (ifftDataComplex.data(), ifftDataComplex.data(), true);
+                ifft.perform (fftWindowed.data(), fftWindowed.data(), true);
                 
                 for (int ii = 0; ii < params.ifftSize; ++ii)
-                    ifftDataAbs.data()[ii] = std::abs(ifftDataComplex.data()[ii]);
-                
-                
-                for (int ii = 0; ii < params.ifftSize; ++ii)
-                    cqtBuffer.addSample (k, ii, (params.fftSize/params.ifftSize * params.gainFactor * ifftDataAbs.data()[ii]));
+                    cqtBuffer.addSample (k, ii, (params.fftSize/params.ifftSize * params.gainFactor * std::abs(fftWindowed.data()[ii])));
             }
             
             bool activationIdx = 0;

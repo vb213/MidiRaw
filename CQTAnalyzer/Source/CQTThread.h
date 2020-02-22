@@ -111,10 +111,10 @@ private:
     
     FFT fft;
     std::vector<float> fftData;
-    std::vector<float> fftWindowed;
+    std::vector<std::complex<float>> fftWindowed;
 
     FFT ifft;
-    std::vector<std::complex<float>> ifftDataComplex;
+    //std::vector<std::complex<float>> ifftDataComplex;
     std::vector<float> ifftDataAbs;
 
     std::vector<std::unique_ptr<WindowWithPosition>> windows;
