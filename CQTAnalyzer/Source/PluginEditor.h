@@ -42,7 +42,7 @@ typedef AudioProcessorValueTreeState::ButtonAttachment ButtonAttachment;
 //==============================================================================
 /**
 */
-class CqtanalyzerAudioProcessorEditor  : public AudioProcessorEditor, private Timer
+class CqtanalyzerAudioProcessorEditor  : public AudioProcessorEditor, private Timer, Slider::Listener
 {
 public:
     CqtanalyzerAudioProcessorEditor (CqtanalyzerAudioProcessor&, AudioProcessorValueTreeState&);
@@ -54,6 +54,7 @@ public:
 
 
     void timerCallback() override;
+    void sliderValueChanged (Slider *slider) override;
 
 private:
     // ====================== begin essentials ==================
@@ -88,9 +89,13 @@ private:
     Label lbDetuning;
     
     SimpleLabel lbFMin, lbNOctaves, lbBPerOct, lbGamma, lbGain, lbTuning;
+    OwnedArray<SimpleLabel> lbFreq;
     
     const int sliderSize = 70;
     const int labelOffset = 20;
+    
+    FlexBox flexboxScale;
+    Array<FlexItem> scItems;
 
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (CqtanalyzerAudioProcessorEditor)

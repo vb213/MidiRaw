@@ -54,12 +54,14 @@ CqtanalyzerAudioProcessorEditor::CqtanalyzerAudioProcessorEditor (CqtanalyzerAud
     slFMin.setColour (Slider::rotarySliderOutlineColourId, globalLaF.ClWidgetColours[0]);
     slFMin.setTextValueSuffix (" Hz");
     slFMinAttachment.reset (new SliderAttachment (valueTreeState, "fMin", slFMin));
+    slFMin.addListener (this);
     
     addAndMakeVisible (slNOctaves);
     slNOctaves.setSliderStyle (Slider::RotaryHorizontalVerticalDrag);
     slNOctaves.setTextBoxStyle (Slider::TextBoxBelow, false, 70, 20);
     slNOctaves.setColour (Slider::rotarySliderOutlineColourId, globalLaF.ClWidgetColours[1]);
     slNOctavesAttachment.reset (new SliderAttachment (valueTreeState, "nOctaves", slNOctaves));
+    slNOctaves.addListener (this);
     
     addAndMakeVisible (slBPerOct);
     slBPerOct.setSliderStyle (Slider::RotaryHorizontalVerticalDrag);
@@ -115,7 +117,6 @@ CqtanalyzerAudioProcessorEditor::CqtanalyzerAudioProcessorEditor (CqtanalyzerAud
     addAndMakeVisible (lbTuning);
     lbTuning.setJustification (Justification::centred);
     lbTuning.setText ("", dontSendNotification);
-
     
     // Visualizer
     addAndMakeVisible (cqtVisualizer);
@@ -195,8 +196,35 @@ void CqtanalyzerAudioProcessorEditor::resized()
     
     lbGain.setBounds (GainArea.removeFromBottom(labelOffset + 5).removeFromRight(sliderSize/2));
     slGain.setBounds (GainArea.removeFromRight(sliderSize/2));
+    area.removeFromRight (sliderSize/2 + 10);
     
-    area.removeFromRight (sliderSize/2 + 20);
+    
+    // Labels for frequency scale
+    
+    
+    flexboxScale.flexDirection = FlexBox::Direction::columnReverse;
+    flexboxScale.flexWrap = FlexBox::Wrap::noWrap;
+    flexboxScale.alignContent = FlexBox::AlignContent::flexEnd;
+    flexboxScale.justifyContent = FlexBox::JustifyContent::spaceBetween;
+    flexboxScale.alignItems = FlexBox::AlignItems::flexEnd;
+    
+    int scWidth = 25;
+    int scHeight = 10;
+
+    for (int ii = 0; ii < 6; ++ii)
+    {
+        std::string freq = std::to_string (int (round (110 * pow (2, ii))));
+        
+        lbFreq.add(new SimpleLabel(freq));
+        lbFreq[ii]->setJustification(Justification::left);
+        addAndMakeVisible (lbFreq.getLast());
+        scItems.add (FlexItem (scWidth, scHeight, *lbFreq[ii]));
+    }
+    flexboxScale.items = scItems;
+    flexboxScale.performLayout (area.removeFromRight(scWidth));
+    area.removeFromRight(5);
+    
+    
     cqtVisualizer.setBounds (area);
 
 }
@@ -232,4 +260,23 @@ void CqtanalyzerAudioProcessorEditor::timerCallback()
     
     slTuning.setBounds (currentGcArea.removeFromLeft (sliderSize - 5));
     lbDetuning.setBounds (currentGcArea.removeFromRight (sliderSize - 5));
+}
+
+
+void CqtanalyzerAudioProcessorEditor::sliderValueChanged (Slider *slider)
+{
+    int scWidth = 25;
+    int scHeight = 10;
+
+    for (int ii = 0; ii < slNOctaves.getValue() + 1; ++ii)
+    {
+        std::string freq = std::to_string (int (round (slFMin.getValue() * pow (2, ii))));
+        
+        lbFreq.add(new SimpleLabel(freq));
+        lbFreq[ii]->setJustification(Justification::left);
+        addAndMakeVisible (lbFreq.getLast());
+        scItems.add (FlexItem (scWidth, scHeight, *lbFreq[ii]));
+    }
+    flexboxScale.items = scItems;
+    
 }
