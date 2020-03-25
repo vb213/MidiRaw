@@ -91,8 +91,14 @@ private:
     SimpleLabel lbFMin, lbNOctaves, lbBPerOct, lbGamma, lbGain, lbTuning;
     OwnedArray<SimpleLabel> lbFreq;
     
+    Rectangle<int> freqIdxArea;
+    
     const int sliderSize = 70;
     const int labelOffset = 20;
+    
+    // For frequency labels of visualizer
+    const int freqScaleWidth = 30;
+    const int freqScaleHeight = 30;
     
     FlexBox flexboxScale;
     Array<FlexItem> scItems;

@@ -207,9 +207,6 @@ void CqtanalyzerAudioProcessorEditor::resized()
     flexboxScale.alignContent = FlexBox::AlignContent::flexEnd;
     flexboxScale.justifyContent = FlexBox::JustifyContent::spaceBetween;
     flexboxScale.alignItems = FlexBox::AlignItems::flexEnd;
-    
-    int scWidth = 25;
-    int scHeight = 10;
 
     for (int ii = 0; ii < 6; ++ii)
     {
@@ -218,10 +215,12 @@ void CqtanalyzerAudioProcessorEditor::resized()
         lbFreq.add(new SimpleLabel(freq));
         lbFreq[ii]->setJustification(Justification::left);
         addAndMakeVisible (lbFreq.getLast());
-        scItems.add (FlexItem (scWidth, scHeight, *lbFreq[ii]));
+        scItems.add (FlexItem (freqScaleWidth, freqScaleHeight, *lbFreq[ii]));
     }
     flexboxScale.items = scItems;
-    flexboxScale.performLayout (area.removeFromRight(scWidth));
+    freqIdxArea = area.removeFromRight(freqScaleWidth);
+    
+    flexboxScale.performLayout (freqIdxArea);
     area.removeFromRight(5);
     
     
@@ -265,18 +264,20 @@ void CqtanalyzerAudioProcessorEditor::timerCallback()
 
 void CqtanalyzerAudioProcessorEditor::sliderValueChanged (Slider *slider)
 {
-    int scWidth = 25;
-    int scHeight = 10;
 
+    lbFreq.clear();
+    scItems.clear();
+    
     for (int ii = 0; ii < slNOctaves.getValue() + 1; ++ii)
     {
         std::string freq = std::to_string (int (round (slFMin.getValue() * pow (2, ii))));
         
-        lbFreq.add(new SimpleLabel(freq));
-        lbFreq[ii]->setJustification(Justification::left);
+        lbFreq.add (new SimpleLabel(freq));
+        lbFreq[ii]->setJustification (Justification::left);
         addAndMakeVisible (lbFreq.getLast());
-        scItems.add (FlexItem (scWidth, scHeight, *lbFreq[ii]));
+        scItems.add (FlexItem (freqScaleWidth, freqScaleHeight, *lbFreq[ii]));
     }
     flexboxScale.items = scItems;
+    flexboxScale.performLayout (freqIdxArea);
     
 }
