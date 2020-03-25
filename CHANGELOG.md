@@ -1,10 +1,11 @@
 ## Known issues and improvements:
-### Issues
+### Issues:
 - Only left channel is analyzed, maybe convesion to mono would be better
 
 ### Possible improvements:
 - Send Freqency and Value of highest peaks via OSC, i.e. for external visualization
 
+# Changes:
 ## v0.4.1:
 - New designed, more accurate tuner algorithm
 - Fixed frequency scale
