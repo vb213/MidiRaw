@@ -306,13 +306,17 @@ void CQTThread::calculateTuning()
         tuningBin += 1;
         goto startTuning;
     }
+
+    // saving frequencies for more compact calculation
+    float a = params.frequencies[tuningBin - 1];
+    float b = params.frequencies[tuningBin];
+    float c = params.frequencies[tuningBin + 1];
     
-    // caluclate frequency offset as fractual-bin
-    float frequencyOffset = 0.5 * (summedCqt[0] - summedCqt[2])/(summedCqt[0] + summedCqt[2] - 2 * summedCqt[1]);
-    
-    // calculate actual tuning frequency
-    float newTuning = params.frequencies[0] * exp2 ((tuningBin + frequencyOffset)/(12 * params.binsPerSemitone));
-    
+    // actual calculation based upon parabolic interpolation
+    float newTuning = b + 0.5 * ((summedCqt[0] - summedCqt[1]) * pow((c - b), 2) -
+                                 (summedCqt[2] - summedCqt[1]) * pow((b - a), 2))/
+                                ((summedCqt[0] - summedCqt[1]) * (c - b) +
+                                 (summedCqt[2] - summedCqt[1]) * (b - a));
     
     // some sort of integration to smoothen the results
     if (tuningIterationCounter < maxTuningCounter)
@@ -327,6 +331,7 @@ void CQTThread::calculateTuning()
         detuningCents -= 50.0;
     else if (detuningCents < -50.0)
         detuningCents += 50.0;
+    DBG (newTuning);
     
-    // DBG (detuningCents);
+    //DBG (detuningCents);
 }

@@ -55,7 +55,7 @@ class CQTThread  :  public ReferenceCountedObject, public Thread
         int hopsize;
         float df;
         float bandwidth_max;
-        int gainFactor;
+        float gainFactor;
         int overlap;
         int binsPerSemitone;
         int nearestBinToTuning;
