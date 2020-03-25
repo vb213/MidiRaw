@@ -199,21 +199,31 @@ void CqtanalyzerAudioProcessorEditor::resized()
     area.removeFromRight (sliderSize/2 + 10);
     
     
+    
     // Labels for frequency scale
-    
-    
     flexboxScale.flexDirection = FlexBox::Direction::columnReverse;
     flexboxScale.flexWrap = FlexBox::Wrap::noWrap;
     flexboxScale.alignContent = FlexBox::AlignContent::flexEnd;
     flexboxScale.justifyContent = FlexBox::JustifyContent::spaceBetween;
     flexboxScale.alignItems = FlexBox::AlignItems::flexEnd;
 
-    for (int ii = 0; ii < 6; ++ii)
+    // clearing necessary for resizable window
+    lbFreq.clear();
+    scItems.clear();
+    
+    // Necessary for initial generation fo the window
+    int numLabels;
+    if (slNOctaves.getValue() < 1)
+        numLabels = 6;
+    else
+        numLabels = slNOctaves.getValue() + 1;
+    
+    for (int ii = 0; ii < numLabels; ++ii)
     {
         std::string freq = std::to_string (int (round (110 * pow (2, ii))));
         
-        lbFreq.add(new SimpleLabel(freq));
-        lbFreq[ii]->setJustification(Justification::left);
+        lbFreq.add (new SimpleLabel(freq));
+        lbFreq[ii]->setJustification (Justification::left);
         addAndMakeVisible (lbFreq.getLast());
         scItems.add (FlexItem (freqScaleWidth, freqScaleHeight, *lbFreq[ii]));
     }

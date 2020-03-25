@@ -98,7 +98,7 @@ private:
     
     // For frequency labels of visualizer
     const int freqScaleWidth = 30;
-    const int freqScaleHeight = 30;
+    const int freqScaleHeight = 10;
     
     FlexBox flexboxScale;
     Array<FlexItem> scItems;
