@@ -61,25 +61,19 @@ df = fs / NFFT; % Frequency-resolution of big FFT
 clear Nk_max
 %% number of frequency-points in k-subbands: start-, center-, stop-bin
 
-%frequency-points with no influence of gamma-value
-fBinStart = round(fk.*2^(-1/B)/df)+1;
-fBinCenter = round(fk/df)+1;
-fBinStop = round(fk.*2^(1/B)/df)+1;
-
-% due to the gamma-value the bandwidth varies.
-% New fStart/Stopbins are needed
-% New start-/stop-bins are calculated by subtracting/adding half of the
+% calculate start and stop-bins of Windows in frequency domain.
+% start-/stop-bins are calculated by subtracting/adding half of the
 % corresponding bandwidth from/to the center-bin
 % Not completely correct => there are more frequency-bins in the upper-half
 % of the window than in the lower half!
 Bk = floor(Bnew/df);
-fBinStartnew = round((fk-Bnew/2)./df);
-fBinStopnew = round((fk+Bnew/2)./df);
-fBinCenternew = round(fk/df)+1;
-fBinStart = fBinStartnew;
+fBinStart = round((fk-Bnew/2)./df);
+fBinStop = round((fk+Bnew/2)./df);
+fBinCenter = round(fk/df)+1;
+
 fBinStart(fBinStart<=0)=1;
-fBinCenter = fBinCenternew+1;
-fBinStop = fBinStopnew+1;
+fBinCenter = fBinCenter+1;
+fBinStop = fBinStop+1;
 
 %To see a demonstration of the impact of gamma set gammaDemoFlag to 1
 gammaDemoFlag = 0;
