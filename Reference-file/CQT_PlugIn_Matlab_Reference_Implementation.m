@@ -30,12 +30,12 @@ fs = 44100;
 fmin = 110;   % lowest frequency which is analyzed
 NOctaves = 5; % Number of analyzed octaves
 B = 48;       % Bins per octave e.g B=12 => semitone-resolution
-gamma = 20;    % increases Bandwidth for lower frequencies => decreases Q
+gamma = 0;    % increases Bandwidth for lower frequencies => decreases Q
 
 
 %% internal parameters derived from User-Settings
 overSamplingFactor = 2;
-Q = round((2^(1 / B) - 2^(-1 / B))^-1); %Q-value for constant Q case
+Q = (2^(1 / B) - 2^(-1 / B))^-1; %Q-value for constant Q case
 alpha = 1/Q;
 
 fmax = fmin * 2^NOctaves; % highest frequency which is to be analyzed
@@ -53,6 +53,8 @@ Qnew = fk./Bnew; % Q-value with gamma decreases for lower-frequencies
 Nk_max = round(fs./fmin.*Qnew);
 Nk_max = max(Nk_max); % maximum window-size
 
+b_new = log(2)./asinh(0.5./Qnew); % new CQT-resolution in bins per octave
+
 L = 2^nextpow2(Nk_max);
 NFFT  = overSamplingFactor * L;
 
@@ -66,14 +68,16 @@ clear Nk_max
 % corresponding bandwidth from/to the center-bin
 % Not completely correct => there are more frequency-bins in the upper-half
 % of the window than in the lower half!
-Bk = floor(Bnew/df);
-fBinStart = round((fk-Bnew/2)./df);
-fBinStop = round((fk+Bnew/2)./df);
-fBinCenter = round(fk/df)+1;
+
+% Bk = floor(Bnew/df);
+
+fBinStart = ceil((fk.*2.^(-1./b_new))./df); 
+fBinStop = floor((fk.*2.^(1./b_new))./df)+1;
+fBinCenter = round(fk./df);
 
 fBinStart(fBinStart<=0)=1;
-fBinCenter = fBinCenter+1;
-fBinStop = fBinStop+1;
+
+Bk = fBinStop - fBinStart + 1;
 
 %To see a demonstration of the impact of gamma set gammaDemoFlag to 1
 gammaDemoFlag = 0;
@@ -126,7 +130,16 @@ W = zeros(NFFT/2+1,K);
 % Hann-windows @fk without interpolation:
 for k = 1:K
     wtemp = zeros(NFFT/2+1,1);
-    wtemp(1:Bk(k),1) = hann(Bk(k),'periodic');
+    if mod(Bk(k), 2)  % odd windowlengths
+        w_lower = hann(2 * (fBinCenter(k) - fBinStart(k)) + 1);
+        w_upper = hann(2 * (fBinStop(k) - fBinCenter(k)) + 1);
+        wtemp(1:Bk(k)) = [w_lower(1:ceil(length(w_lower)/2)); w_upper((ceil(length(w_upper)/2)+1):end)];
+    else
+        w_lower = hann(2 * (fBinCenter(k) - fBinStart(k) + 1));
+        w_upper = hann(2 * (fBinStop(k) - fBinCenter(k)));
+        wtemp(1:Bk(k)) = [w_lower(1:ceil(length(w_lower)/2)); w_upper((ceil(length(w_upper)/2)+1):end)];
+    end
+    
     wtemp = circshift(wtemp,ceil(fk(k)/df)-ceil(Bk(k)/2));
     W(:,k) = wtemp;
 end
