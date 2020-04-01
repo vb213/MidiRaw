@@ -31,6 +31,7 @@ CQTThread::Params::Params (const double fs, const float fMin, const float nOctav
 
     const double Q = 1.0 / (exp2 (1.0 / B) - exp2 (-1.0 / B));
     const double alpha = 1 / Q;
+    
 
     const auto m = exp2 (1.0 / B);
     frequencyRatio = m;
@@ -39,18 +40,20 @@ CQTThread::Params::Params (const double fs, const float fMin, const float nOctav
 
     K = roundToInt (std::floor (std::log2 (fMax / fMin) * B));
     binsPerSemitone = int(B / 12.0);
+    
 
     int Nk = 0;  // current number of samples for each frequencybin
     int Nk_max = 0;  // maximum number of samples for a frequency bin
     
     bandwidth.resize (K);
-    
     frequencies.resize (K);
+    B_gammacorrected.resize(K);
     
     float minOffset = 100.0f;
     
     for (int k = 0; k < K; ++k)
     {
+        
         if (k == 0)
             frequencies[k] = fMin;
         else
@@ -73,6 +76,8 @@ CQTThread::Params::Params (const double fs, const float fMin, const float nOctav
         
         if (bandwidth[k] > bandwidth_max)
             bandwidth_max = bandwidth[k];
+        
+        B_gammacorrected[k] = log (2.0) / asinh (bandwidth[k] / (2 * frequencies[k]));
     }
     
     
@@ -130,31 +135,48 @@ void CQTThread::computeWindows()
     hannWindowForTimedomain.resize (params.blockLength);
     WindowingFunction<float>::fillWindowingTables (hannWindowForTimedomain.data(), params.blockLength, WindowingFunction<float>::hann, false);
     
+    std::vector<float> hannLookup (8 * params.ifftSize + 1); // maybe a smaller window is already sufficient
+    WindowingFunction<float>::fillWindowingTables (hannLookup.data(), hannLookup.size(), WindowingFunction<float>::hann, false);
+    const int halfwin_len = floor (hannLookup.size());
+    
     // hann windows filterbank
     windows.resize (params.K);
     const double df = params.sampleRate / params.fftSize;
     
     for (int k = 0; k < params.K; ++k)
     {
-        const float fc = params.frequencies[k];
+        float fc = params.frequencies[k];
+        float fStart = fc * exp2 (-1 / params.B_gammacorrected[k]);
+        float fStop = fc * exp2 (1 / params.B_gammacorrected[k]);;
         // const float r = params.frequencyRatio;
         
-        const int firstBin = round ((fc - (params.bandwidth[k] / 2)) / df);
-        const int lastBin = round ((fc + (params.bandwidth[k] / 2)) / df);
-        const int centerBin = round (fc / df) - firstBin;
+        int firstBin = ceil (fStart / df);
+        int lastBin = floor (fStop / df);
+        int centerBin = round (fc / df) - firstBin;
 
-        const int winLength = lastBin - firstBin;
+        int winLength = lastBin - firstBin + 1;
 
         windows[k] = std::make_unique<WindowWithPosition> (firstBin, centerBin);
         windows[k]->resize (winLength);
         
+        // Calculate corresponding frequencies of the lookup-window for the current CQT-bin
+        std::vector<float> windowFrequencies (hannLookup.size());
+        
+        for (int ii = 0; ii < hannLookup.size(); ++ii)
+            windowFrequencies[ii] = fc * exp2 ((-halfwin_len + ii) / (halfwin_len * params.B_gammacorrected[k]));
+        
         
         // New window calculation, not so efficient but way more accurate
-        std::vector<float> hannInFrequencyDomain (winLength);
-        WindowingFunction<float>::fillWindowingTables (hannInFrequencyDomain.data(), winLength, WindowingFunction<float>::hann, false);
-
         for (int ii = 0; ii < winLength; ++ii)
-            windows[k]->operator[] (ii) = hannInFrequencyDomain[ii];
+        {
+            std::vector<float> frequencyDifference = windowFrequencies;
+            
+            for (int jj = 0; jj < hannLookup.size(); ++jj)
+                frequencyDifference[jj] = fabs (windowFrequencies[jj] - (firstBin + ii) * params.df);
+            
+            int min_idx = std::min_element (frequencyDifference.begin(), frequencyDifference.end()) - frequencyDifference.begin();
+            windows[k]->operator[] (ii) = hannLookup[min_idx];
+        }
         
         // fft normalization
         FloatVectorOperations::multiply (windows[k]->data(), 1.0f / params.fftSize, static_cast<int> (windows[k]->size()));

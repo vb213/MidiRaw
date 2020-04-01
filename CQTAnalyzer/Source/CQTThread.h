@@ -49,6 +49,7 @@ class CQTThread  :  public ReferenceCountedObject, public Thread
         int K;
         std::vector<float> frequencies;
         std::vector<float> bandwidth;
+        std::vector<float> B_gammacorrected;
         double frequencyRatio;
         int ifftOrder, ifftSize;
         int blockLength;
