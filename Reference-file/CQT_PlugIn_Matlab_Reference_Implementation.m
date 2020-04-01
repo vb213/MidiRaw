@@ -71,9 +71,12 @@ clear Nk_max
 
 % Bk = floor(Bnew/df);
 
-fBinStart = ceil((fk.*2.^(-1./b_new))./df); 
+fBinStart = ceil((fk.*2.^(-1./b_new))./df)+1; 
 fBinStop = floor((fk.*2.^(1./b_new))./df)+1;
 fBinCenter = round(fk./df);
+
+fStart = fk.*2.^(-1./b_new);
+fStop = fk.*2.^(1./b_new);
 
 fBinStart(fBinStart<=0)=1;
 
@@ -119,34 +122,31 @@ M = 2^nextpow2(Bkmax); % IDFT-length
 divFact = NFFT/M;
 
 %% calculation of window-functions
+% A window with quite high resolution is calculated as lookup-window. The
+% lookup-window is scanned for the closest freqencies in respect to the FFT
+% bin-freuencies. These values are now taken for the windows in
+% freq-domain. So an interpolated, warped window can be designed quite
+% easily.
 
-% For the constant-Q case (gamma=0) the start- and stop-bins are equally
-% distributed on a logarithmic axis. The interpolation points are defined
-% by Bk. The window form is a periodic Hann-window
 
 % the windows in frequency-domain are written into the matrix W
 W = zeros(NFFT/2+1,K);
 
-% Hann-windows @fk without interpolation:
+w_lookup = hann(NFFT/2 + 1, 'periodic').';
+halfwin_len = floor(length(w_lookup)/2);
+
+fft_freqs = 0:df:fs/2;
+
 for k = 1:K
-    wtemp = zeros(NFFT/2+1,1);
-    if mod(Bk(k), 2)  % odd windowlengths
-        w_lower = hann(2 * (fBinCenter(k) - fBinStart(k)) + 1);
-        w_upper = hann(2 * (fBinStop(k) - fBinCenter(k)) + 1);
-        wtemp(1:Bk(k)) = [w_lower(1:ceil(length(w_lower)/2)); w_upper((ceil(length(w_upper)/2)+1):end)];
-    else
-        w_lower = hann(2 * (fBinCenter(k) - fBinStart(k) + 1));
-        w_upper = hann(2 * (fBinStop(k) - fBinCenter(k)));
-        wtemp(1:Bk(k)) = [w_lower(1:ceil(length(w_lower)/2)); w_upper((ceil(length(w_upper)/2)+1):end)];
+    f_win = fk(k) * 2.^((-halfwin_len:halfwin_len)/(b_new(k) * halfwin_len));
+
+    for ii = fBinStart(k):fBinStop(k)
+        [~, nearestBin] = min(abs(f_win - fft_freqs(ii)));
+        W(ii, k) = w_lookup(nearestBin);
     end
     
-    wtemp = circshift(wtemp,ceil(fk(k)/df)-ceil(Bk(k)/2));
-    W(:,k) = wtemp;
+    
 end
-
-% There is still potential for improvement here => warped windows would be
-% the correct way to design the windows. With warped windows the higher
-% number of frequency-bins in the upper-half could be taken into account
 
 
 %% import audio-data and determine sampling frequency fs
