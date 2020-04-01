@@ -30,12 +30,12 @@ fs = 44100;
 fmin = 110;   % lowest frequency which is analyzed
 NOctaves = 5; % Number of analyzed octaves
 B = 48;       % Bins per octave e.g B=12 => semitone-resolution
-gamma = 20;    % increases Bandwidth for lower frequencies => decreases Q
+gamma = 0;    % increases Bandwidth for lower frequencies => decreases Q
 
 
 %% internal parameters derived from User-Settings
 overSamplingFactor = 2;
-Q = round((2^(1 / B) - 2^(-1 / B))^-1); %Q-value for constant Q case
+Q = (2^(1 / B) - 2^(-1 / B))^-1; %Q-value for constant Q case
 alpha = 1/Q;
 
 fmax = fmin * 2^NOctaves; % highest frequency which is to be analyzed
@@ -53,6 +53,8 @@ Qnew = fk./Bnew; % Q-value with gamma decreases for lower-frequencies
 Nk_max = round(fs./fmin.*Qnew);
 Nk_max = max(Nk_max); % maximum window-size
 
+b_new = log(2)./asinh(0.5./Qnew); % new CQT-resolution in bins per octave
+
 L = 2^nextpow2(Nk_max);
 NFFT  = overSamplingFactor * L;
 
@@ -66,14 +68,19 @@ clear Nk_max
 % corresponding bandwidth from/to the center-bin
 % Not completely correct => there are more frequency-bins in the upper-half
 % of the window than in the lower half!
-Bk = floor(Bnew/df);
-fBinStart = round((fk-Bnew/2)./df);
-fBinStop = round((fk+Bnew/2)./df);
-fBinCenter = round(fk/df)+1;
+
+% Bk = floor(Bnew/df);
+
+fBinStart = ceil((fk.*2.^(-1./b_new))./df)+1; 
+fBinStop = floor((fk.*2.^(1./b_new))./df)+1;
+fBinCenter = round(fk./df);
+
+fStart = fk.*2.^(-1./b_new);
+fStop = fk.*2.^(1./b_new);
 
 fBinStart(fBinStart<=0)=1;
-fBinCenter = fBinCenter+1;
-fBinStop = fBinStop+1;
+
+Bk = fBinStop - fBinStart + 1;
 
 %To see a demonstration of the impact of gamma set gammaDemoFlag to 1
 gammaDemoFlag = 0;
@@ -115,25 +122,31 @@ M = 2^nextpow2(Bkmax); % IDFT-length
 divFact = NFFT/M;
 
 %% calculation of window-functions
+% A window with quite high resolution is calculated as lookup-window. The
+% lookup-window is scanned for the closest freqencies in respect to the FFT
+% bin-freuencies. These values are now taken for the windows in
+% freq-domain. So an interpolated, warped window can be designed quite
+% easily.
 
-% For the constant-Q case (gamma=0) the start- and stop-bins are equally
-% distributed on a logarithmic axis. The interpolation points are defined
-% by Bk. The window form is a periodic Hann-window
 
 % the windows in frequency-domain are written into the matrix W
 W = zeros(NFFT/2+1,K);
 
-% Hann-windows @fk without interpolation:
-for k = 1:K
-    wtemp = zeros(NFFT/2+1,1);
-    wtemp(1:Bk(k),1) = hann(Bk(k),'periodic');
-    wtemp = circshift(wtemp,ceil(fk(k)/df)-ceil(Bk(k)/2));
-    W(:,k) = wtemp;
-end
+w_lookup = hann(NFFT/2 + 1, 'periodic').';
+halfwin_len = floor(length(w_lookup)/2);
 
-% There is still potential for improvement here => warped windows would be
-% the correct way to design the windows. With warped windows the higher
-% number of frequency-bins in the upper-half could be taken into account
+fft_freqs = 0:df:fs/2;
+
+for k = 1:K
+    f_win = fk(k) * 2.^((-halfwin_len:halfwin_len)/(b_new(k) * halfwin_len));
+
+    for ii = fBinStart(k):fBinStop(k)
+        [~, nearestBin] = min(abs(f_win - fft_freqs(ii)));
+        W(ii, k) = w_lookup(nearestBin);
+    end
+    
+    
+end
 
 
 %% import audio-data and determine sampling frequency fs

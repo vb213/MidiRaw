@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <JUCERPROJECT id="mbpAgi" name="QCTAnalyzer" displaySplashScreen="0" reportAppUsage="0"
-              splashScreenColour="Dark" projectType="audioplug" version="0.4.1"
-              bundleIdentifier="at.iem.QCTAnalyzer" includeBinaryInAppConfig="1"
+              splashScreenColour="Dark" projectType="audioplug" version="0.4.2"
+              bundleIdentifier="at.iem.CQTAnalyzer" includeBinaryInAppConfig="1"
               cppLanguageStandard="14" buildVST="0" buildVST3="1" buildAU="0"
               buildAUv3="0" buildRTAS="0" buildAAX="0" buildStandalone="1"
-              enableIAA="0" pluginName="CQT Analyzer" pluginDesc="CQT Analyzer"
+              enableIAA="0" pluginName="CQTAnalyzer" pluginDesc="CQTAnalyzer"
               pluginManufacturer="IEM" pluginManufacturerCode="IEMA" pluginCode="CqAn"
               pluginChannelConfigs="" pluginIsSynth="0" pluginWantsMidiIn="0"
               pluginProducesMidiOut="0" pluginIsMidiEffectPlugin="0" pluginEditorRequiresKeys="0"

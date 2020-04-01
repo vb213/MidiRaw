@@ -26,31 +26,32 @@ CQTThread::Params::Params (const double fs, const float fMin, const float nOctav
 {
     sampleRate = fs;
     bandwidth_max = 0.0f;
-    gainFactor = (nOctaves * nOctaves * nOctaves) / 20;  // empirical, can surely be improved
+    gainFactor = (nOctaves * nOctaves * nOctaves) / 10;  // empirical, can surely be improved
     tuning = tuningFreq;
 
     const double Q = 1.0 / (exp2 (1.0 / B) - exp2 (-1.0 / B));
     const double alpha = 1 / Q;
-
+    
     const auto m = exp2 (1.0 / B);
-    frequencyRatio = m;
 
     const float fMax = jmin (fs / 2 / m, fMin * pow (2, nOctaves));
 
     K = roundToInt (std::floor (std::log2 (fMax / fMin) * B));
     binsPerSemitone = int(B / 12.0);
+    
 
     int Nk = 0;  // current number of samples for each frequencybin
     int Nk_max = 0;  // maximum number of samples for a frequency bin
     
-    bandwidth.resize (K);
-    
+    std::vector<float> bandwidth (K);
     frequencies.resize (K);
+    B_gammacorrected.resize(K);
     
     float minOffset = 100.0f;
     
     for (int k = 0; k < K; ++k)
     {
+        
         if (k == 0)
             frequencies[k] = fMin;
         else
@@ -73,8 +74,10 @@ CQTThread::Params::Params (const double fs, const float fMin, const float nOctav
         
         if (bandwidth[k] > bandwidth_max)
             bandwidth_max = bandwidth[k];
+        
+        B_gammacorrected[k] = log (2.0) / asinh (bandwidth[k] / (2 * frequencies[k]));
     }
-    
+
     
     blockLength = nextPowerOfTwo (ceil (Nk_max));
     fftSize = (fftOversampling * blockLength);
@@ -102,7 +105,6 @@ ifft (params.ifftOrder),
 cqtFifo (params.K, numberOfBuffersInCQTQueue)
 {
     fftData.resize (2 * params.fftSize);
-
     ifftData.resize (params.ifftSize);
 
     cqtBuffer.setSize (params.K, params.ifftSize);
@@ -130,31 +132,47 @@ void CQTThread::computeWindows()
     hannWindowForTimedomain.resize (params.blockLength);
     WindowingFunction<float>::fillWindowingTables (hannWindowForTimedomain.data(), params.blockLength, WindowingFunction<float>::hann, false);
     
-    // hann windows filterbank
+    std::vector<float> hannLookup (8 * params.ifftSize + 1); // maybe a smaller window is already sufficient
+    WindowingFunction<float>::fillWindowingTables (hannLookup.data(), hannLookup.size(), WindowingFunction<float>::hann, false);
+    const int halfwin_len = floor (hannLookup.size() / 2);
+    
     windows.resize (params.K);
     const double df = params.sampleRate / params.fftSize;
     
     for (int k = 0; k < params.K; ++k)
     {
-        const float fc = params.frequencies[k];
-        // const float r = params.frequencyRatio;
+        float fc = params.frequencies[k];
         
-        const int firstBin = round ((fc - (params.bandwidth[k] / 2)) / df);
-        const int lastBin = round ((fc + (params.bandwidth[k] / 2)) / df);
-        const int centerBin = round (fc / df) - firstBin;
+        int firstBin = ceil (fc * exp2 (-1 / params.B_gammacorrected[k]) / df);
+        int lastBin = floor (fc * exp2 (1 / params.B_gammacorrected[k]) / df);
 
-        const int winLength = lastBin - firstBin;
+        int winLength = lastBin - firstBin + 1;
 
-        windows[k] = std::make_unique<WindowWithPosition> (firstBin, centerBin);
+        // Initialize window-array
+        windows[k] = std::make_unique<WindowWithPosition> (firstBin);
         windows[k]->resize (winLength);
         
-        
-        // New window calculation, not so efficient but way more accurate
-        std::vector<float> hannInFrequencyDomain (winLength);
-        WindowingFunction<float>::fillWindowingTables (hannInFrequencyDomain.data(), winLength, WindowingFunction<float>::hann, false);
+        // Calculate corresponding frequencies of the lookup-window for the current CQT-bin
+        std::vector<float> windowFrequencies (hannLookup.size());
+        for (int jj = 0; jj < hannLookup.size(); ++jj)
+            windowFrequencies[jj] = fc * exp2 ((-halfwin_len + jj) / (halfwin_len * params.B_gammacorrected[k]));
 
+        // New window calculation, not so efficient but way more accurate
         for (int ii = 0; ii < winLength; ++ii)
-            windows[k]->operator[] (ii) = hannInFrequencyDomain[ii];
+        {
+            std::vector<float> frequencyDifference = windowFrequencies;
+            
+            // Calculate difference to currently evaluated DFT-bin
+            for (int jj = 0; jj < hannLookup.size(); ++jj)
+                frequencyDifference[jj] = fabs (windowFrequencies[jj] - (firstBin + ii) * params.df);
+            
+            // find minimum difference
+            int win_idx = int (std::min_element (frequencyDifference.begin(), frequencyDifference.end()) - frequencyDifference.begin());
+            
+            // Store results in window-array
+            windows[k]->operator[] (ii) = hannLookup[win_idx];
+        }
+
         
         // fft normalization
         FloatVectorOperations::multiply (windows[k]->data(), 1.0f / params.fftSize, static_cast<int> (windows[k]->size()));
@@ -209,9 +227,6 @@ void CQTThread::run()
                     else
                         ifftData[ii] = 0;
                 }
-
-                //circshift
-                std::rotate (ifftData.begin(), ifftData.begin() + round(winLen * 0.5), ifftData.end());
                 
 
                 // IFFT
@@ -261,10 +276,24 @@ void CQTThread::run()
     }
 }
 
+
 void CQTThread::calculateTuning()
 {
     ++tuningIterationCounter;
     std::reverse(cqtCollectorBuffer.begin(), cqtCollectorBuffer.end());
+    
+    if (setTuningFlag)
+    {
+        float minOffset = 100.0f;
+        params.tuning = currentTuningFreq;
+        for (int k = 0; k < params.K; k++){
+            if (fabs (params.frequencies[k] - currentTuningFreq) < minOffset)
+            {
+                params.nearestBinToTuning = k;
+                minOffset = fabs (params.frequencies[k] - currentTuningFreq);
+            }
+        }
+    }
 
     int tuningBin = params.nearestBinToTuning;
     
@@ -331,7 +360,4 @@ void CQTThread::calculateTuning()
         detuningCents -= 50.0;
     else if (detuningCents < -50.0)
         detuningCents += 50.0;
-    DBG (newTuning);
-    
-    //DBG (detuningCents);
 }

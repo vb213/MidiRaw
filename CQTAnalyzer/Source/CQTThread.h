@@ -48,8 +48,7 @@ class CQTThread  :  public ReferenceCountedObject, public Thread
         int fftOrder, fftSize;
         int K;
         std::vector<float> frequencies;
-        std::vector<float> bandwidth;
-        double frequencyRatio;
+        std::vector<float> B_gammacorrected;
         int ifftOrder, ifftSize;
         int blockLength;
         int hopsize;
@@ -67,8 +66,8 @@ class CQTThread  :  public ReferenceCountedObject, public Thread
      */
     struct WindowWithPosition : public std::vector<float>
     {
-        WindowWithPosition (const int firstBin, const int centerBin) : position (firstBin), center (centerBin) {}
-        const int position, center;
+        WindowWithPosition (const int firstBin) : position (firstBin){}
+        const int position;
     };
 
 public:
@@ -88,6 +87,12 @@ public:
      */
     BufferQueue<float>& getCqtFifo() { return cqtFifo; }
     
+    void setTuningFreq( float newTuning ){
+        setTuningFlag = true;
+        currentTuningFreq = newTuning;
+    }
+    
+    
     float getTuning() { return detuningCents; }
 
 private:
@@ -102,7 +107,8 @@ private:
     
     void calculateTuning();
 
-    const Params params;
+    Params params;
+    float currentTuningFreq = 0.0f;
 
     BufferQueue<float> audioBufferFifo;
     OverlappingSampleCollector<float> collector;
@@ -122,11 +128,10 @@ private:
     float integratedTuning;
     float detuningCents = 0.0f;
     int tuningIterationCounter = 0;
-    int maxTuningCounter = 512;
+    int maxTuningCounter = 128;
+    bool setTuningFlag = false;
     
     AudioBuffer<float> cqtBuffer;
     std::vector<float> cqtCollectorBuffer;
     BufferQueue<float> cqtFifo;
-    
-    
 };
