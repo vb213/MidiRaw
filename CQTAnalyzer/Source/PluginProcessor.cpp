@@ -207,9 +207,12 @@ void CqtanalyzerAudioProcessor::setStateInformation (const void* data, int sizeI
 void CqtanalyzerAudioProcessor::parameterChanged (const String &parameterID, float newValue)
 {
     DBG ("Parameter with ID " << parameterID << " has changed. New value: " << newValue);
-
-    if (paramChanged == 0)
+    //if (parameterID = 'tuningFreq')
+    if (parameterID == "tuningFreq")
+        cqt->setTuningFreq (newValue);
+    else if (paramChanged == 0)
         paramChanged = 1;
+    
 }
 
 void CqtanalyzerAudioProcessor::updateBuffers()

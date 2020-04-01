@@ -87,6 +87,12 @@ public:
      */
     BufferQueue<float>& getCqtFifo() { return cqtFifo; }
     
+    void setTuningFreq( float newTuning ){
+        setTuningFlag = true;
+        currentTuningFreq = newTuning;
+    }
+    
+    
     float getTuning() { return detuningCents; }
 
 private:
@@ -101,7 +107,8 @@ private:
     
     void calculateTuning();
 
-    const Params params;
+    Params params;
+    float currentTuningFreq = 0.0f;
 
     BufferQueue<float> audioBufferFifo;
     OverlappingSampleCollector<float> collector;
@@ -122,6 +129,7 @@ private:
     float detuningCents = 0.0f;
     int tuningIterationCounter = 0;
     int maxTuningCounter = 128;
+    bool setTuningFlag = false;
     
     AudioBuffer<float> cqtBuffer;
     std::vector<float> cqtCollectorBuffer;

@@ -276,10 +276,24 @@ void CQTThread::run()
     }
 }
 
+
 void CQTThread::calculateTuning()
 {
     ++tuningIterationCounter;
     std::reverse(cqtCollectorBuffer.begin(), cqtCollectorBuffer.end());
+    
+    if (setTuningFlag)
+    {
+        float minOffset = 100.0f;
+        params.tuning = currentTuningFreq;
+        for (int k = 0; k < params.K; k++){
+            if (fabs (params.frequencies[k] - currentTuningFreq) < minOffset)
+            {
+                params.nearestBinToTuning = k;
+                minOffset = fabs (params.frequencies[k] - currentTuningFreq);
+            }
+        }
+    }
 
     int tuningBin = params.nearestBinToTuning;
     
