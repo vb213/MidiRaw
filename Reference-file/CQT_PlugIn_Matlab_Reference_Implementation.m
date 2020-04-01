@@ -144,15 +144,20 @@ for k = 1:K
         [~, nearestBin] = min(abs(f_win - fft_freqs(ii)));
         W(ii, k) = w_lookup(nearestBin);
     end
-    
+    % Normalize windows to area under function
+    WFact(k) = trapz(W(:,k));
+    % integral over hanning window normalized to length is 0.5 
+    AreaFact = 0.5;
+    W(:,k) = AreaFact*(W(:,k)./(WFact(k)));
     
 end
+
 
 
 %% import audio-data and determine sampling frequency fs
 
 
-filetype= '*.wav'; % set filetype of audiofile.
+filetype= '*.flac'; % set filetype of audiofile.
 
 [fileName, pathName] = uigetfile({filetype},'Select Audiofile!');
 
@@ -206,7 +211,8 @@ end
 
 %% Tuner as implemented in the plugin:
 % Show deviation in cent to tuning frequency.
-fTune = 440;
+fTune = 443;
+
 NearestBins = zeros(size(C,1),1);
 
 % get nearest bin to tuning frequency.
