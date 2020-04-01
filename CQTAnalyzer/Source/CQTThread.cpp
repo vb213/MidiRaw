@@ -137,7 +137,7 @@ void CQTThread::computeWindows()
     
     std::vector<float> hannLookup (8 * params.ifftSize + 1); // maybe a smaller window is already sufficient
     WindowingFunction<float>::fillWindowingTables (hannLookup.data(), hannLookup.size(), WindowingFunction<float>::hann, false);
-    const int halfwin_len = floor (hannLookup.size());
+    const int halfwin_len = floor (hannLookup.size() / 2);
     
     // hann windows filterbank
     windows.resize (params.K);
@@ -146,41 +146,37 @@ void CQTThread::computeWindows()
     for (int k = 0; k < params.K; ++k)
     {
         float fc = params.frequencies[k];
-        // const float r = params.frequencyRatio;
         
         int firstBin = ceil (fc * exp2 (-1 / params.B_gammacorrected[k]) / df);
         int lastBin = floor (fc * exp2 (1 / params.B_gammacorrected[k]) / df);
-        int centerBin = round (fc / df) - firstBin;
 
         int winLength = lastBin - firstBin + 1;
 
-        windows[k] = std::make_unique<WindowWithPosition> (firstBin, centerBin);
+        // Initialize window-array
+        windows[k] = std::make_unique<WindowWithPosition> (firstBin);
         windows[k]->resize (winLength);
         
         // Calculate corresponding frequencies of the lookup-window for the current CQT-bin
         std::vector<float> windowFrequencies (hannLookup.size());
-        
-        for (int ii = 0; ii < hannLookup.size(); ++ii)
-            windowFrequencies[ii] = fc * exp2 ((-halfwin_len + ii) / (halfwin_len * params.B_gammacorrected[k]));
-        
-        float windowSum = 0.0f;
-        std::vector<int> fftIdx (winLength);
+        for (int jj = 0; jj < hannLookup.size(); ++jj)
+            windowFrequencies[jj] = fc * exp2 ((-halfwin_len + jj) / (halfwin_len * params.B_gammacorrected[k]));
+
         // New window calculation, not so efficient but way more accurate
         for (int ii = 0; ii < winLength; ++ii)
         {
             std::vector<float> frequencyDifference = windowFrequencies;
             
+            // Calculate difference to currently evaluated DFT-bin
             for (int jj = 0; jj < hannLookup.size(); ++jj)
                 frequencyDifference[jj] = fabs (windowFrequencies[jj] - (firstBin + ii) * params.df);
             
-            fftIdx[ii] = int (std::min_element (frequencyDifference.begin(), frequencyDifference.end()) - frequencyDifference.begin());
+            // find minimum difference
+            int win_idx = int (std::min_element (frequencyDifference.begin(), frequencyDifference.end()) - frequencyDifference.begin());
             
-            windowSum += float(hannLookup[fftIdx[ii]]);
+            // Store results in window-array
+            windows[k]->operator[] (ii) = hannLookup[win_idx];
         }
-        for (int ii = 0; ii < winLength; ++ii)
-        {
-            windows[k]->operator[] (ii) = hannLookup[fftIdx[ii]];
-        }
+
         
         // fft normalization
         FloatVectorOperations::multiply (windows[k]->data(), 1.0f / params.fftSize, static_cast<int> (windows[k]->size()));

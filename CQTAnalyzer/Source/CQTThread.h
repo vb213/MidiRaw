@@ -68,8 +68,8 @@ class CQTThread  :  public ReferenceCountedObject, public Thread
      */
     struct WindowWithPosition : public std::vector<float>
     {
-        WindowWithPosition (const int firstBin, const int centerBin) : position (firstBin), center (centerBin) {}
-        const int position, center;
+        WindowWithPosition (const int firstBin) : position (firstBin){}
+        const int position;
     };
 
 public:
