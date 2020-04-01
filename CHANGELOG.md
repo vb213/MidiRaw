@@ -1,9 +1,9 @@
 ## Known issues and improvements:
 ### Issues:
-- Only left channel is analyzed, maybe convesion to mono would be better
+- Only left channel is analyzed, maybe conversion to mono would be better
 
 ### Possible improvements:
-- Send Freqency and Value of highest peaks via OSC, i.e. for external visualization
+- Send Frequency and Value of highest peaks via OSC, i.e. for external visualization
 
 # Changes:
 ## v0.4.2:
@@ -24,11 +24,11 @@
 
 ## v0.3.0:
 - Now in IEM-Design
-- Completelly scaleable
+- Completely scaleable
 - OSC Connectivity for receiving parameters
 
 ## v0.2.0
 - Implementation of tuner algorithm
 
-## v0.1.0: 
+## v0.1.0:
 - First working prototype
