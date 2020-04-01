@@ -79,7 +79,7 @@ CQTThread::Params::Params (const double fs, const float fMin, const float nOctav
         
         B_gammacorrected[k] = log (2.0) / asinh (bandwidth[k] / (2 * frequencies[k]));
     }
-    
+
     
     blockLength = nextPowerOfTwo (ceil (Nk_max));
     fftSize = (fftOversampling * blockLength);
@@ -146,12 +146,10 @@ void CQTThread::computeWindows()
     for (int k = 0; k < params.K; ++k)
     {
         float fc = params.frequencies[k];
-        float fStart = fc * exp2 (-1 / params.B_gammacorrected[k]);
-        float fStop = fc * exp2 (1 / params.B_gammacorrected[k]);;
         // const float r = params.frequencyRatio;
         
-        int firstBin = ceil (fStart / df);
-        int lastBin = floor (fStop / df);
+        int firstBin = ceil (fc * exp2 (-1 / params.B_gammacorrected[k]) / df);
+        int lastBin = floor (fc * exp2 (1 / params.B_gammacorrected[k]) / df);
         int centerBin = round (fc / df) - firstBin;
 
         int winLength = lastBin - firstBin + 1;
@@ -165,7 +163,8 @@ void CQTThread::computeWindows()
         for (int ii = 0; ii < hannLookup.size(); ++ii)
             windowFrequencies[ii] = fc * exp2 ((-halfwin_len + ii) / (halfwin_len * params.B_gammacorrected[k]));
         
-        
+        float windowSum = 0.0f;
+        std::vector<int> fftIdx (winLength);
         // New window calculation, not so efficient but way more accurate
         for (int ii = 0; ii < winLength; ++ii)
         {
@@ -174,8 +173,13 @@ void CQTThread::computeWindows()
             for (int jj = 0; jj < hannLookup.size(); ++jj)
                 frequencyDifference[jj] = fabs (windowFrequencies[jj] - (firstBin + ii) * params.df);
             
-            int min_idx = std::min_element (frequencyDifference.begin(), frequencyDifference.end()) - frequencyDifference.begin();
-            windows[k]->operator[] (ii) = hannLookup[min_idx];
+            fftIdx[ii] = int (std::min_element (frequencyDifference.begin(), frequencyDifference.end()) - frequencyDifference.begin());
+            
+            windowSum += float(hannLookup[fftIdx[ii]]);
+        }
+        for (int ii = 0; ii < winLength; ++ii)
+        {
+            windows[k]->operator[] (ii) = hannLookup[fftIdx[ii]];
         }
         
         // fft normalization
@@ -231,9 +235,6 @@ void CQTThread::run()
                     else
                         ifftData[ii] = 0;
                 }
-
-                //circshift
-                std::rotate (ifftData.begin(), ifftData.begin() + round(winLen * 0.5), ifftData.end());
                 
 
                 // IFFT
