@@ -64,6 +64,7 @@ private:
     // stored references to the AudioProcessor and ValueTreeState holding all the parameters
     CqtanalyzerAudioProcessor& audioProcessor;
     AudioProcessorValueTreeState& valueTreeState;
+    void generateScale(int numLabels, float fMin);
 
 
     /* title and footer component

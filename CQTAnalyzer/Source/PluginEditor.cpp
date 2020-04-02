@@ -118,6 +118,9 @@ CqtanalyzerAudioProcessorEditor::CqtanalyzerAudioProcessorEditor (CqtanalyzerAud
     lbTuning.setJustification (Justification::centred);
     lbTuning.setText ("", dontSendNotification);
     
+    // This is needed for correct scale when reopening UI
+    generateScale(slNOctaves.getValue() + 1, slFMin.getValue());
+    
     // Visualizer
     addAndMakeVisible (cqtVisualizer);
 
@@ -207,32 +210,13 @@ void CqtanalyzerAudioProcessorEditor::resized()
     flexboxScale.justifyContent = FlexBox::JustifyContent::spaceBetween;
     flexboxScale.alignItems = FlexBox::AlignItems::flexEnd;
 
-    // clearing necessary for resizable window
-    lbFreq.clear();
-    scItems.clear();
-    
-    // Necessary for initial generation fo the window
-    int numLabels;
-    if (slNOctaves.getValue() < 1)
-        numLabels = 6;
-    else
-        numLabels = slNOctaves.getValue() + 1;
-    
-    for (int ii = 0; ii < numLabels; ++ii)
-    {
-        std::string freq = std::to_string (int (round (110 * pow (2, ii))));
-        
-        lbFreq.add (new SimpleLabel(freq));
-        lbFreq[ii]->setJustification (Justification::left);
-        addAndMakeVisible (lbFreq.getLast());
-        scItems.add (FlexItem (freqScaleWidth, freqScaleHeight, *lbFreq[ii]));
-    }
-    flexboxScale.items = scItems;
     freqIdxArea = area.removeFromRight(freqScaleWidth);
     
-    flexboxScale.performLayout (freqIdxArea);
+    // necessary for resizeable window
+    if (slNOctaves.getValue() > 0)
+        generateScale((slNOctaves.getValue() + 1), slFMin.getValue());
+
     area.removeFromRight(5);
-    
     
     cqtVisualizer.setBounds (area);
 
@@ -274,13 +258,18 @@ void CqtanalyzerAudioProcessorEditor::timerCallback()
 
 void CqtanalyzerAudioProcessorEditor::sliderValueChanged (Slider *slider)
 {
+    generateScale(int(slNOctaves.getValue()) + 1, slFMin.getValue());
+}
 
+
+void CqtanalyzerAudioProcessorEditor::generateScale(int numLabels, float fMin)
+{
     lbFreq.clear();
     scItems.clear();
     
-    for (int ii = 0; ii < slNOctaves.getValue() + 1; ++ii)
+    for (int ii = 0; ii < numLabels; ++ii)
     {
-        std::string freq = std::to_string (int (round (slFMin.getValue() * pow (2, ii))));
+        std::string freq = std::to_string (int (round (fMin * pow (2, ii))));
         
         lbFreq.add (new SimpleLabel(freq));
         lbFreq[ii]->setJustification (Justification::left);
@@ -289,5 +278,4 @@ void CqtanalyzerAudioProcessorEditor::sliderValueChanged (Slider *slider)
     }
     flexboxScale.items = scItems;
     flexboxScale.performLayout (freqIdxArea);
-    
 }

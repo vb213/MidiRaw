@@ -26,15 +26,13 @@ CQTThread::Params::Params (const double fs, const float fMin, const float nOctav
 {
     sampleRate = fs;
     bandwidth_max = 0.0f;
-    gainFactor = (nOctaves * nOctaves * nOctaves) / 20;  // empirical, can surely be improved
+    gainFactor = (nOctaves * nOctaves * nOctaves) / 10;  // empirical, can surely be improved
     tuning = tuningFreq;
 
     const double Q = 1.0 / (exp2 (1.0 / B) - exp2 (-1.0 / B));
     const double alpha = 1 / Q;
     
-
     const auto m = exp2 (1.0 / B);
-    frequencyRatio = m;
 
     const float fMax = jmin (fs / 2 / m, fMin * pow (2, nOctaves));
 
@@ -45,7 +43,7 @@ CQTThread::Params::Params (const double fs, const float fMin, const float nOctav
     int Nk = 0;  // current number of samples for each frequencybin
     int Nk_max = 0;  // maximum number of samples for a frequency bin
     
-    bandwidth.resize (K);
+    std::vector<float> bandwidth (K);
     frequencies.resize (K);
     B_gammacorrected.resize(K);
     
@@ -107,7 +105,6 @@ ifft (params.ifftOrder),
 cqtFifo (params.K, numberOfBuffersInCQTQueue)
 {
     fftData.resize (2 * params.fftSize);
-
     ifftData.resize (params.ifftSize);
 
     cqtBuffer.setSize (params.K, params.ifftSize);
@@ -139,7 +136,6 @@ void CQTThread::computeWindows()
     WindowingFunction<float>::fillWindowingTables (hannLookup.data(), hannLookup.size(), WindowingFunction<float>::hann, false);
     const int halfwin_len = floor (hannLookup.size() / 2);
     
-    // hann windows filterbank
     windows.resize (params.K);
     const double df = params.sampleRate / params.fftSize;
     
@@ -280,10 +276,24 @@ void CQTThread::run()
     }
 }
 
+
 void CQTThread::calculateTuning()
 {
     ++tuningIterationCounter;
     std::reverse(cqtCollectorBuffer.begin(), cqtCollectorBuffer.end());
+    
+    if (setTuningFlag)
+    {
+        float minOffset = 100.0f;
+        params.tuning = currentTuningFreq;
+        for (int k = 0; k < params.K; k++){
+            if (fabs (params.frequencies[k] - currentTuningFreq) < minOffset)
+            {
+                params.nearestBinToTuning = k;
+                minOffset = fabs (params.frequencies[k] - currentTuningFreq);
+            }
+        }
+    }
 
     int tuningBin = params.nearestBinToTuning;
     
@@ -350,7 +360,4 @@ void CQTThread::calculateTuning()
         detuningCents -= 50.0;
     else if (detuningCents < -50.0)
         detuningCents += 50.0;
-    DBG (newTuning);
-    
-    //DBG (detuningCents);
 }

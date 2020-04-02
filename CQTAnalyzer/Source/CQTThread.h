@@ -48,9 +48,7 @@ class CQTThread  :  public ReferenceCountedObject, public Thread
         int fftOrder, fftSize;
         int K;
         std::vector<float> frequencies;
-        std::vector<float> bandwidth;
         std::vector<float> B_gammacorrected;
-        double frequencyRatio;
         int ifftOrder, ifftSize;
         int blockLength;
         int hopsize;
@@ -89,6 +87,12 @@ public:
      */
     BufferQueue<float>& getCqtFifo() { return cqtFifo; }
     
+    void setTuningFreq( float newTuning ){
+        setTuningFlag = true;
+        currentTuningFreq = newTuning;
+    }
+    
+    
     float getTuning() { return detuningCents; }
 
 private:
@@ -103,7 +107,8 @@ private:
     
     void calculateTuning();
 
-    const Params params;
+    Params params;
+    float currentTuningFreq = 0.0f;
 
     BufferQueue<float> audioBufferFifo;
     OverlappingSampleCollector<float> collector;
@@ -123,11 +128,10 @@ private:
     float integratedTuning;
     float detuningCents = 0.0f;
     int tuningIterationCounter = 0;
-    int maxTuningCounter = 512;
+    int maxTuningCounter = 128;
+    bool setTuningFlag = false;
     
     AudioBuffer<float> cqtBuffer;
     std::vector<float> cqtCollectorBuffer;
     BufferQueue<float> cqtFifo;
-    
-    
 };
