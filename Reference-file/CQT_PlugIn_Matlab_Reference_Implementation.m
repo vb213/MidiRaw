@@ -46,16 +46,15 @@ fm = @(fmin, k, B) 2^(1 / B).^k * fmin; % center-frequency calculation
 fk = fm (fmin, [0:K-1], B); % calculate center-frequencies
 
 % apply gamma-value
-BOld = alpha.*fk;
-Bnew = alpha.*fk+gamma; % new bandwidths are calculated
-Qnew = fk./Bnew; % Q-value with gamma decreases for lower-frequencies
+Bk = alpha.*fk+gamma; % new bandwidths are calculated
+Qnew = fk./Bk; % Q-value with gamma decreases for lower-frequencies
 
-Nk_max = round(fs./fmin.*Qnew);
-Nk_max = max(Nk_max); % maximum window-size
+Nk = round(fs./fmin.*Qnew);
+N_max = max(Nk); % maximum window-size
 
 b_new = log(2)./asinh(0.5./Qnew); % new CQT-resolution in bins per octave
 
-L = 2^nextpow2(Nk_max);
+L = 2^nextpow2(N_max);
 NFFT  = overSamplingFactor * L;
 
 df = fs / NFFT; % Frequency-resolution of big FFT
@@ -144,20 +143,13 @@ for k = 1:K
         [~, nearestBin] = min(abs(f_win - fft_freqs(ii)));
         W(ii, k) = w_lookup(nearestBin);
     end
-    % Normalize windows to area under function
-    WFact(k) = trapz(W(:,k));
-    % integral over hanning window normalized to length is 0.5 
-    AreaFact = 0.5;
-    W(:,k) = AreaFact*(W(:,k)./(WFact(k)));
-    
 end
 
 
 
 %% import audio-data and determine sampling frequency fs
 
-
-filetype= '*.flac'; % set filetype of audiofile.
+filetype= '*.wav'; % set filetype of audiofile.
 
 [fileName, pathName] = uigetfile({filetype},'Select Audiofile!');
 
@@ -169,7 +161,6 @@ if x.fs ~= fs
     disp ('Signal resampled')
     x.resample (fs);
 end
-
 %% buffering, windowing and zero-padding of imported audio-file
 xBlocks = buffer (x, L, L / 2, 'nodelay');
 xBlocks.applyWindow (@hann);
@@ -211,7 +202,7 @@ end
 
 %% Tuner as implemented in the plugin:
 % Show deviation in cent to tuning frequency.
-fTune = 443;
+fTune = 440;
 
 NearestBins = zeros(size(C,1),1);
 
