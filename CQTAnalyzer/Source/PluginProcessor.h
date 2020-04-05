@@ -78,7 +78,12 @@ public:
 private:
     //==============================================================================
     // list of used audio parameters
-    float *fMin, *nOctaves, *bPerOct, *gamma, *gain, *tuningFreq;
+    std::atomic<float>* fMin;
+    std::atomic<float>* nOctaves;
+    std::atomic<float>* bPerOct;
+    std::atomic<float>* gamma;
+    std::atomic<float>* gain;
+    std::atomic<float>* tuningFreq;
     
     CQTThread::Ptr cqt;
     
