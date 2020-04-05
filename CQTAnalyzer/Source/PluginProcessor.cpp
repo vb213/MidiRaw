@@ -40,20 +40,20 @@ CqtanalyzerAudioProcessor::CqtanalyzerAudioProcessor()
                        createParameterLayout())
 {
     // get pointers to the parameters
-    fMin = parameters.getRawParameterValue("fMin");
-    nOctaves = parameters.getRawParameterValue("nOctaves");
-    bPerOct = parameters.getRawParameterValue("bPerOct");
-    gamma = parameters.getRawParameterValue("gamma");
-    gain = parameters.getRawParameterValue("gain");
-    tuningFreq = parameters.getRawParameterValue("tuningFreq");
+    fMin = parameters.getRawParameterValue ("fMin");
+    nOctaves = parameters.getRawParameterValue ("nOctaves");
+    bPerOct = parameters.getRawParameterValue ("bPerOct");
+    gamma = parameters.getRawParameterValue ("gamma");
+    gain = parameters.getRawParameterValue ("gain");
+    tuningFreq = parameters.getRawParameterValue ("tuningFreq");
 
 
     // add listeners to parameter changes
-    parameters.addParameterListener("fMin", this);
-    parameters.addParameterListener("nOctaves", this);
-    parameters.addParameterListener("bPerOct", this);
-    parameters.addParameterListener("gamma", this);
-    parameters.addParameterListener("tuningFreq", this);
+    parameters.addParameterListener ("fMin", this);
+    parameters.addParameterListener ("nOctaves", this);
+    parameters.addParameterListener ("bPerOct", this);
+    parameters.addParameterListener ("gamma", this);
+    parameters.addParameterListener ("tuningFreq", this);
 }
 
 CqtanalyzerAudioProcessor::~CqtanalyzerAudioProcessor()
