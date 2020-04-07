@@ -26,7 +26,7 @@
 
 //==============================================================================
 CqtanalyzerAudioProcessorEditor::CqtanalyzerAudioProcessorEditor (CqtanalyzerAudioProcessor& p, AudioProcessorValueTreeState& vts)
-    : AudioProcessorEditor (&p), audioProcessor (p), valueTreeState (vts), footer (p.getOSCParameterInterface()), cqtVisualizer (audioProcessor.getCQT())
+: AudioProcessorEditor (&p), audioProcessor (p), valueTreeState (vts), footer (p.getOSCParameterInterface()), cqtVisualizer (audioProcessor.getCQT())
 {
     // ============== BEGIN: essentials ======================
     // set GUI size and lookAndFeel
@@ -225,8 +225,8 @@ void CqtanalyzerAudioProcessorEditor::resized()
 void CqtanalyzerAudioProcessorEditor::timerCallback()
 {
     // Update detuning-value
-    auto cqt = audioProcessor.getCQT();
-    const float detuning = cqt->getTuning();
+    auto& cqt = audioProcessor.getCQT();
+    float& detuning = cqt->getTuning();
 
     std::string detuningString;
 

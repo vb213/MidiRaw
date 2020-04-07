@@ -93,7 +93,7 @@ public:
     }
     
     
-    float getTuning() { return detuningCents; }
+    float& getTuning() { return detuningCents; }
 
 private:
 
