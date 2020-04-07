@@ -226,7 +226,14 @@ void CqtanalyzerAudioProcessorEditor::timerCallback()
 {
     // Update detuning-value
     auto& cqt = audioProcessor.getCQT();
-    float& detuning = cqt->getTuning();
+    float detuning = 0.0f;
+
+    if (cqt != nullptr)
+        detuning = cqt->getTuning();
+    else
+        detuning = 0.0f;
+
+
 
     std::string detuningString;
 
