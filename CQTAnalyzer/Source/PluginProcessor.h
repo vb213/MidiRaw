@@ -46,7 +46,7 @@ public:
      bool isBusesLayoutSupported (const BusesLayout& layouts) const override;
     #endif
 
-    void processBlock (AudioSampleBuffer&, MidiBuffer&) override;
+    void processBlock (AudioBuffer<float>&, MidiBuffer&) override;
 
     //==============================================================================
     AudioProcessorEditor* createEditor() override;
@@ -84,6 +84,8 @@ private:
     std::atomic<float>* gamma;
     std::atomic<float>* gain;
     std::atomic<float>* tuningFreq;
+    
+    AudioBuffer<float> copyBuffer;
     
     CQTThread::Ptr cqt;
     

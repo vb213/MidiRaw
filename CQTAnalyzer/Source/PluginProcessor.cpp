@@ -93,6 +93,9 @@ void CqtanalyzerAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
 {
     // Initialize CQTThread
     cqt = new CQTThread (sampleRate, *fMin, *nOctaves, *bPerOct, *gamma, *tuningFreq);
+    copyBuffer.setSize (numberOfInputChannels, samplesPerBlock);
+    copyBuffer.clear ();
+
 }
 
 void CqtanalyzerAudioProcessor::releaseResources()
@@ -126,20 +129,20 @@ bool CqtanalyzerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layou
 #endif
 
 
-void CqtanalyzerAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiBuffer&)
+void CqtanalyzerAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer&)
 {
     double sampleRate = getSampleRate();
-       
-    float gainLinear = pow (10, *gain/20.0);
-    buffer.applyGain (gainLinear);
+    
+    // Copy and add buffer from all channels for a 'mono' spectrogram
+    for (int ii = 0; ii < numberOfInputChannels; ++ii)
+        copyBuffer.copyFrom (0, 0, buffer, ii, 0, buffer.getNumSamples());
+
+    copyBuffer.applyGain(0, 0, copyBuffer.getNumSamples(), pow (10, *gain/20.0) / numberOfInputChannels);
     
     // Here are the samples pushed into the buffer for QCT analysis
-    // TODO: Currently only analyzing left channel --> conversion to momo could be useful
     auto retainedCqt = cqt;
     if (retainedCqt != nullptr)
-        retainedCqt->pushSamples (buffer.getReadPointer (0), buffer.getNumSamples());
-
-    buffer.applyGain (1.0/gainLinear);
+        retainedCqt->pushSamples (copyBuffer.getReadPointer (0), copyBuffer.getNumSamples());
     
     // TODO: Implement timer-class for a more elegant change of params
     if (paramChanged > 0)
