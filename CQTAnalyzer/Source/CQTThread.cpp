@@ -108,6 +108,8 @@ cqtFifo (params.K, numberOfBuffersInCQTQueue)
     ifftData.resize (params.ifftSize);
 
     cqtBuffer.setSize (params.K, params.ifftSize);
+    cqtBuffer.clear();
+
     cqtCollectorBuffer.resize (params.K);
     
     integratedTuning = tuningFreq;
@@ -167,12 +169,11 @@ void CQTThread::computeWindows()
                 frequencyDifference[jj] = fabs (windowFrequencies[jj] - (firstBin + ii) * params.df);
             
             // find minimum difference
-            int win_idx = int (std::min_element (frequencyDifference.begin(), frequencyDifference.end()) - frequencyDifference.begin());
+            const int win_idx = int (std::min_element (frequencyDifference.begin(), frequencyDifference.end()) - frequencyDifference.begin());
             
             // Store results in window-array
             windows[k]->operator[] (ii) = hannLookup[win_idx];
         }
-
         
         // fft normalization
         FloatVectorOperations::multiply (windows[k]->data(), 1.0f / params.fftSize, static_cast<int> (windows[k]->size()));
@@ -222,7 +223,7 @@ void CQTThread::run()
                 {
                     if (ii < winLen)
                     {
-                        ifftData[ii] = std::complex<float>(fftData[2 * (ii + windows[k]->position)], fftData[2 * (ii + windows[k]->position) + 1]) * windows[k]->data()[ii];
+                        ifftData[ii] = std::complex<float> (fftData[2 * (ii + windows[k]->position)], fftData[2 * (ii + windows[k]->position) + 1]) * windows[k]->data()[ii];
                     }
                     else
                         ifftData[ii] = 0;
@@ -269,7 +270,7 @@ void CQTThread::run()
             {
                 for (int k = 0; k < params.K; ++k)
                 {
-                    cqtBuffer.setSample (k, ii, 0);
+                    cqtBuffer.setSample (k, ii, 0.0f);
                 }
             }
         }
