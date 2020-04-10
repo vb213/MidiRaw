@@ -52,9 +52,9 @@ class CQTThread  :  public ReferenceCountedObject, public Thread
         int ifftOrder, ifftSize;
         int blockLength;
         int hopsize;
-        float df;
-        float bandwidth_max;
-        float gainFactor;
+        double df;
+        double bandwidth_max;
+        double gainFactor;
         int overlap;
         int binsPerSemitone;
         int nearestBinToTuning;
@@ -87,10 +87,7 @@ public:
      */
     BufferQueue<float>& getCqtFifo() { return cqtFifo; }
     
-    void setTuningFreq( float newTuning ){
-        setTuningFlag = true;
-        currentTuningFreq = newTuning;
-    }
+    void setTuningFreq (const float newTuning);
     
     
     float& getTuning() { return detuningCents; }
@@ -108,7 +105,6 @@ private:
     void calculateTuning();
 
     Params params;
-    float currentTuningFreq = 0.0f;
 
     BufferQueue<float> audioBufferFifo;
     OverlappingSampleCollector<float> collector;
@@ -129,7 +125,6 @@ private:
     float detuningCents = 0.0f;
     int tuningIterationCounter = 0;
     int maxTuningCounter = 128;
-    bool setTuningFlag = false;
     
     AudioBuffer<float> cqtBuffer;
     std::vector<float> cqtCollectorBuffer;

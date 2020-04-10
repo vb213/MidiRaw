@@ -26,8 +26,9 @@ CQTThread::Params::Params (const double fs, const float fMin, const float nOctav
 {
     sampleRate = fs;
     bandwidth_max = 0.0f;
-    gainFactor = (nOctaves * nOctaves * nOctaves) / 10;  // empirical, can surely be improved
+    gainFactor = (nOctaves * nOctaves * nOctaves) / 60;  // empirical, can surely be improved
     tuning = tuningFreq;
+    nearestBinToTuning = 0;
 
     const double Q = 1.0 / (exp2 (1.0 / B) - exp2 (-1.0 / B));
     const double alpha = 1 / Q;
@@ -47,8 +48,6 @@ CQTThread::Params::Params (const double fs, const float fMin, const float nOctav
     frequencies.resize (K);
     B_gammacorrected.resize(K);
     
-    float minOffset = 100.0f;
-    
     for (int k = 0; k < K; ++k)
     {
         
@@ -56,13 +55,6 @@ CQTThread::Params::Params (const double fs, const float fMin, const float nOctav
             frequencies[k] = fMin;
         else
             frequencies[k] = frequencies[k - 1] * m;
-        
-        // TODO: SOFTCODE
-        if (fabs (frequencies[k] - tuningFreq) < minOffset)
-        {
-            nearestBinToTuning = k;
-            minOffset = fabs (frequencies[k] - tuningFreq);
-        }
         
         //bandwidth
         bandwidth[k] = alpha * frequencies[k] + gamma;
@@ -112,6 +104,7 @@ cqtFifo (params.K, numberOfBuffersInCQTQueue)
 
     cqtCollectorBuffer.resize (params.K);
     
+    setTuningFreq(tuningFreq);
     integratedTuning = tuningFreq;
     
     computeWindows();
@@ -123,7 +116,7 @@ cqtFifo (params.K, numberOfBuffersInCQTQueue)
 CQTThread::~CQTThread()
 {
     signalThreadShouldExit();
-    stopThread (1000);
+    stopThread (500);
 }
 
 
@@ -278,31 +271,31 @@ void CQTThread::run()
 }
 
 
+void CQTThread::setTuningFreq (const float newTuning)
+{
+    params.tuning = newTuning;
+    
+    float minOffset = 100.0f;
+    for (int k = 0; k < params.K; k++){
+        if (fabs (params.frequencies[k] - params.tuning) < minOffset)
+        {
+            params.nearestBinToTuning = k;
+            minOffset = fabs (params.frequencies[k] - params.tuning);
+        }
+    }
+}
+
+
 void CQTThread::calculateTuning()
 {
     ++tuningIterationCounter;
     std::reverse(cqtCollectorBuffer.begin(), cqtCollectorBuffer.end());
     
-    if (setTuningFlag)
-    {
-        float minOffset = 100.0f;
-        params.tuning = currentTuningFreq;
-        for (int k = 0; k < params.K; k++){
-            if (fabs (params.frequencies[k] - currentTuningFreq) < minOffset)
-            {
-                params.nearestBinToTuning = k;
-                minOffset = fabs (params.frequencies[k] - currentTuningFreq);
-            }
-        }
-    }
-
-    int tuningBin = params.nearestBinToTuning;
-    
     // start from here if maximum isnt at the tuning-bin
     startTuning:
 
     
-    int modTuning = tuningBin % params.binsPerSemitone;
+    int modTuning = params.nearestBinToTuning % params.binsPerSemitone;
     
     std::vector<float> summedCqt (3, 0.0f);
 
@@ -328,19 +321,19 @@ void CQTThread::calculateTuning()
     // shifting tuning-center if above or below the next bin
     if (summedCqt[0] > summedCqt[1])
     {
-        tuningBin -= 1;
+        params.nearestBinToTuning -= 1;
         goto startTuning;
     }
     else if (summedCqt[2] > summedCqt[1])
     {
-        tuningBin += 1;
+        params.nearestBinToTuning += 1;
         goto startTuning;
     }
 
     // saving frequencies for more compact calculation
-    float a = params.frequencies[tuningBin - 1];
-    float b = params.frequencies[tuningBin];
-    float c = params.frequencies[tuningBin + 1];
+    float a = params.frequencies[params.nearestBinToTuning - 1];
+    float b = params.frequencies[params.nearestBinToTuning];
+    float c = params.frequencies[params.nearestBinToTuning + 1];
     
     // actual calculation based upon parabolic interpolation
     float newTuning = b + 0.5 * ((summedCqt[0] - summedCqt[1]) * pow((c - b), 2) -

@@ -33,6 +33,8 @@ CqtanalyzerAudioProcessorEditor::CqtanalyzerAudioProcessorEditor (CqtanalyzerAud
     //setSize(500, 300); // use this to create a fixed-size GUI
     setResizeLimits (650, 500, 1200, 1000); // use this to create a resizable GUI
     setLookAndFeel (&globalLaF);
+    
+    samplerate = p.getSampleRate();
 
     // make title and footer visible, and set the PluginName
     addAndMakeVisible (&title);
@@ -119,7 +121,7 @@ CqtanalyzerAudioProcessorEditor::CqtanalyzerAudioProcessorEditor (CqtanalyzerAud
     lbTuning.setText ("", dontSendNotification);
     
     // This is needed for correct scale when reopening UI
-    generateScale(slNOctaves.getValue() + 1, slFMin.getValue());
+    generateScale (slNOctaves.getValue(), slBPerOct.getValue(), slFMin.getValue());
     
     // Visualizer
     addAndMakeVisible (cqtVisualizer);
@@ -214,7 +216,7 @@ void CqtanalyzerAudioProcessorEditor::resized()
     
     // necessary for resizeable window
     if (slNOctaves.getValue() > 0)
-        generateScale((slNOctaves.getValue() + 1), slFMin.getValue());
+        generateScale (slNOctaves.getValue(), slBPerOct.getValue(), slFMin.getValue());
 
     area.removeFromRight(5);
     
@@ -265,14 +267,17 @@ void CqtanalyzerAudioProcessorEditor::timerCallback()
 
 void CqtanalyzerAudioProcessorEditor::sliderValueChanged (Slider *slider)
 {
-    generateScale(int(slNOctaves.getValue()) + 1, slFMin.getValue());
+    generateScale (slNOctaves.getValue(), slBPerOct.getValue(), slFMin.getValue());
 }
 
 
-void CqtanalyzerAudioProcessorEditor::generateScale(int numLabels, float fMin)
+void CqtanalyzerAudioProcessorEditor::generateScale (const float nOctaves, const float nBPerOct, const float fMin)
 {
     lbFreq.clear();
     scItems.clear();
+    
+    const float fMax = jmin (samplerate / 2 / exp2 (1.0/nBPerOct), fMin * pow (2, nOctaves));
+    const int numLabels = roundToInt (std::floor (std::log2 (fMax / fMin))) + 1;
     
     for (int ii = 0; ii < numLabels; ++ii)
     {

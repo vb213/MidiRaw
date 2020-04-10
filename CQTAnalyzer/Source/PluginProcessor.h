@@ -69,6 +69,7 @@ public:
     void updateBuffers() override; // use this to implement a buffer update method
 
     CQTThread::Ptr& getCQT() { return cqt; }
+    double& getSamplerate() { return sr; }
     
     //======= Parameters ===========================================================
     std::vector<std::unique_ptr<RangedAudioParameter>> createParameterLayout();
@@ -84,6 +85,9 @@ private:
     std::atomic<float>* gamma;
     std::atomic<float>* gain;
     std::atomic<float>* tuningFreq;
+    
+    double sr;
+
     
     AudioBuffer<float> copyBuffer;
     

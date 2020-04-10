@@ -64,7 +64,7 @@ private:
     // stored references to the AudioProcessor and ValueTreeState holding all the parameters
     CqtanalyzerAudioProcessor& audioProcessor;
     AudioProcessorValueTreeState& valueTreeState;
-    void generateScale(int numLabels, float fMin);
+    void generateScale(const float nOctaves, const float nBPerOct, const float fMin);
 
 
     /* title and footer component
@@ -81,6 +81,8 @@ private:
     // Attachments to create a connection between IOWidgets comboboxes
     // and the associated parameters
     CQTVisualizer cqtVisualizer;
+    
+    double samplerate;
     
     GroupComponent gcTuning;
     
