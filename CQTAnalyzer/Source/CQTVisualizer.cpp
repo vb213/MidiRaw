@@ -79,8 +79,20 @@ void CQTVisualizer::updateData()
 
             for (int h = 0; h < image.getHeight(); ++h)
             {
-                const float val = poppedData[h];
-                const int colourIndex = jlimit (0, 127, roundToInt (val * 127));
+                bool dB_scale = true;
+                float val;
+                float dB_peak = 0;
+                float dB_range = 40;
+                
+                if (dB_scale == false)
+                {
+                    val = poppedData[h] * 127;
+                }
+                else
+                {
+                    val = 20*log10 (poppedData[h]) * ((127+dB_peak)/dB_range) + 127 + dB_peak;
+                }
+                const int colourIndex = jlimit (0, 127, roundToInt (val));
                 const auto colour = Colour (parula[colourIndex][0], parula[colourIndex][1], parula[colourIndex][2]);
                 image.setPixelAt (imageOffset, h, colour);
             }
