@@ -291,8 +291,6 @@ void CqtanalyzerAudioProcessorEditor::timerCallback()
     {
         slDynamicRange.setVisible (true);
         lbDynamicRange.setVisible (true);
-        
-        DBG(float(lbDynamicRange.isVisible()));
     }
     else if ((slDBScale.getValue() < 0.5f) && (slDynamicRange.isVisible() == true))
     {

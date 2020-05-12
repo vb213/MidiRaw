@@ -220,7 +220,7 @@ void CqtanalyzerAudioProcessor::parameterChanged (const String &parameterID, flo
     auto retainedCqt = cqt;
     if ((parameterID == "tuningFreq")&&(retainedCqt != nullptr))
         retainedCqt->setTuningFreq (newValue);
-    else if ((paramChanged == 0) && (parameterID != "dBScale") && (parameterID != "dynamicRange") && (parameterID != "peakLevel"))
+    else if (paramChanged == 0)
         paramChanged = 1;
     
 }
