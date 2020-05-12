@@ -46,6 +46,8 @@ CqtanalyzerAudioProcessor::CqtanalyzerAudioProcessor()
     gamma = parameters.getRawParameterValue ("gamma");
     gain = parameters.getRawParameterValue ("gain");
     tuningFreq = parameters.getRawParameterValue ("tuningFreq");
+    dBScale = parameters.getRawParameterValue ("dBScale");
+    dynamicRange = parameters.getRawParameterValue ("dynamicRange");
 
 
     // add listeners to parameter changes
@@ -218,7 +220,7 @@ void CqtanalyzerAudioProcessor::parameterChanged (const String &parameterID, flo
     auto retainedCqt = cqt;
     if ((parameterID == "tuningFreq")&&(retainedCqt != nullptr))
         retainedCqt->setTuningFreq (newValue);
-    else if (paramChanged == 0)
+    else if ((paramChanged == 0) && (parameterID != "dBScale") && (parameterID != "dynamicRange") && (parameterID != "peakLevel"))
         paramChanged = 1;
     
 }
@@ -237,28 +239,40 @@ std::vector<std::unique_ptr<RangedAudioParameter>> CqtanalyzerAudioProcessor::cr
     std::vector<std::unique_ptr<RangedAudioParameter>> params;
 
     params.push_back (OSCParameterInterface::createParameterTheOldWay ("fMin", "Minimum Analysis Frequency ", "",
-                                                       NormalisableRange<float> (55.0f, 300.0f, 0.1f), 110.0f,
-                                                       [](float value) {return String (value);}, nullptr));
+                                                                       NormalisableRange<float> (55.0f, 300.0f, 0.1f), 110.0f,
+                                                                       [](float value) {return String (value);}, nullptr));
     
     params.push_back (OSCParameterInterface::createParameterTheOldWay ("nOctaves", "Number of Analyzed Octaves ", "",
-                                                       NormalisableRange<float> (1.0f, 8.0f, 1.0f), 5.0f,
-                                                       [](float value) {return String (value);}, nullptr));
+                                                                       NormalisableRange<float> (1.0f, 8.0f, 1.0f), 5.0f,
+                                                                       [](float value) {return String (value);}, nullptr));
     
     params.push_back (OSCParameterInterface::createParameterTheOldWay ("bPerOct", "Bins per Octave ", "",
-                                                       NormalisableRange<float> (12.0f, 72.0f, 12.0f), 48.0f,
-                                                       [](float value) {return String (value);}, nullptr));
+                                                                       NormalisableRange<float> (12.0f, 72.0f, 12.0f), 48.0f,
+                                                                       [](float value) {return String (value);}, nullptr));
     
     params.push_back (OSCParameterInterface::createParameterTheOldWay ("gamma", "Gamma (for better Time-Resolution at low frequencies) ", "",
-                                                       NormalisableRange<float> (0.0f, 30.0f, 0.1f), 0.0f,
-                                                       [](float value) {return String (value);}, nullptr));
+                                                                       NormalisableRange<float> (0.0f, 30.0f, 0.1f), 0.0f,
+                                                                       [](float value) {return String (value);}, nullptr));
     
     params.push_back (OSCParameterInterface::createParameterTheOldWay ("gain", "Gain for Visualization ", "",
-                                                       NormalisableRange<float> (-30.0f, 30.0f, 0.1f), 0.0f,
-                                                       [](float value) {return String (value);}, nullptr));
+                                                                       NormalisableRange<float> (-30.0f, 30.0f, 0.1f), 0.0f,
+                                                                       [](float value) {return String (value);}, nullptr));
     
     params.push_back (OSCParameterInterface::createParameterTheOldWay ("tuningFreq", "Tuning Frequency ", "",
-                                                       NormalisableRange<float> (432.0f, 448.0f, 1.0f), 440.0f,
-                                                       [](float value) {return String (value);}, nullptr));
+                                                                       NormalisableRange<float> (432.0f, 448.0f, 1.0f), 440.0f,
+                                                                       [](float value) {return String (value);}, nullptr));
+    
+    params.push_back (OSCParameterInterface::createParameterTheOldWay ("dBScale", "dB Scale ", "",
+                                                                       NormalisableRange<float> (0.0f, 1.0f, 1.0f), 0.0f,
+                                                                       [](float value)
+                                                                       {
+                                                                           if (value >= 0.5f ) return "dB";
+                                                                           else return "lin";
+                                                                       }, nullptr));
+    
+    params.push_back (OSCParameterInterface::createParameterTheOldWay ("dynamicRange", "Dynamic Range", "dB",
+                                                                       NormalisableRange<float> (10.0f, 80.0f, 1.f), 40.0,
+                                                                       [](float value) {return String (value, 0);}, nullptr));
     
     return params;
 }

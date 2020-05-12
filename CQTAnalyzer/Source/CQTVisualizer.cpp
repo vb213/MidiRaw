@@ -23,8 +23,12 @@ along with this software.  If not, see <https://www.gnu.org/licenses/>.
 #include "CQTVisualizer.h"
 #include "Utilities/Parula.h"
 
-CQTVisualizer::CQTVisualizer (CQTThread::Ptr& cqtThread) : cqt (cqtThread)
+CQTVisualizer::CQTVisualizer (CQTThread::Ptr& cqtThread, AudioProcessorValueTreeState& vts) : cqt (cqtThread)
 {
+    
+    dBScale = bool (*vts.getRawParameterValue ("dBScale"));
+    dynamicRange = *vts.getRawParameterValue ("dynamicRange");
+    
     startTimer (20);
 }
 
@@ -76,21 +80,19 @@ void CQTVisualizer::updateData()
         for (int i = 0; i < numColsAvailable; ++i)
         {
             fifo.pop (poppedData.data());
-
+            const float kFactor = ((127)/dynamicRange);
+            
             for (int h = 0; h < image.getHeight(); ++h)
             {
-                bool dB_scale = true;
                 float val;
-                float dB_peak = 0;
-                float dB_range = 40;
                 
-                if (dB_scale == false)
+                if (dBScale == false)
                 {
                     val = poppedData[h] * 127;
                 }
                 else
                 {
-                    val = 20*log10 (poppedData[h]) * ((127+dB_peak)/dB_range) + 127 + dB_peak;
+                    val = 20*log10 (poppedData[h]) * kFactor + 127;
                 }
                 const int colourIndex = jlimit (0, 127, roundToInt (val));
                 const auto colour = Colour (parula[colourIndex][0], parula[colourIndex][1], parula[colourIndex][2]);

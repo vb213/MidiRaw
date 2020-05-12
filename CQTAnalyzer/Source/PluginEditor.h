@@ -55,7 +55,8 @@ public:
 
     void timerCallback() override;
     void sliderValueChanged (Slider *slider) override;
-
+    
+    CQTVisualizer& getVisualizerComponent () { return cqtVisualizer; }
 private:
     // ====================== begin essentials ==================
     // lookAndFeel class with the IEM plug-in suite design
@@ -86,12 +87,13 @@ private:
     
     GroupComponent gcTuning;
     
-    Slider slFMin, slNOctaves, slBPerOct, slGamma, slGain, slTuning;
-    std::unique_ptr<SliderAttachment> slFMinAttachment, slNOctavesAttachment, slBPerOctAttachment, slGammaAttachment, slGainAttachment, slTuningAttachment;
+    Slider slFMin, slNOctaves, slBPerOct, slGamma, slGain, slTuning, slDynamicRange, slDBScale;
+    
+    std::unique_ptr<SliderAttachment> slFMinAttachment, slNOctavesAttachment, slBPerOctAttachment, slGammaAttachment, slGainAttachment, slTuningAttachment, slDynamicRangeAttachment, slDBScaleAttachment;
     
     Label lbDetuning;
     
-    SimpleLabel lbFMin, lbNOctaves, lbBPerOct, lbGamma, lbGain, lbTuning;
+    SimpleLabel lbFMin, lbNOctaves, lbBPerOct, lbGamma, lbGain, lbTuning, lbDynamicRange;
     OwnedArray<SimpleLabel> lbFreq;
     
     Rectangle<int> freqIdxArea;

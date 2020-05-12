@@ -351,7 +351,7 @@ void CQTThread::calculateTuning()
     detuningCents = 1200 * log2 (integratedTuning/params.tuning);
     
     if (detuningCents > 50.0)
-        detuningCents -= 50.0;
+        detuningCents -= 100.0;
     else if (detuningCents < -50.0)
-        detuningCents += 50.0;
+        detuningCents += 100.0;
 }

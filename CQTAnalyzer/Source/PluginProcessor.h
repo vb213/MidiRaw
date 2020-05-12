@@ -85,6 +85,8 @@ private:
     std::atomic<float>* gamma;
     std::atomic<float>* gain;
     std::atomic<float>* tuningFreq;
+    std::atomic<float>* dBScale;
+    std::atomic<float>* dynamicRange;
     
     double sr;
 
