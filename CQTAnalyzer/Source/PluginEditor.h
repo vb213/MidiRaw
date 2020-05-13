@@ -87,9 +87,9 @@ private:
     
     GroupComponent gcTuning;
     
-    Slider slFMin, slNOctaves, slBPerOct, slGamma, slGain, slTuning, slDynamicRange, slDBScale;
+    Slider slFMin, slNOctaves, slBPerOct, slGamma, slGain, slTuning, slDynamicRange, slDBScale, slTunerStatus;
     
-    std::unique_ptr<SliderAttachment> slFMinAttachment, slNOctavesAttachment, slBPerOctAttachment, slGammaAttachment, slGainAttachment, slTuningAttachment, slDynamicRangeAttachment, slDBScaleAttachment;
+    std::unique_ptr<SliderAttachment> slFMinAttachment, slNOctavesAttachment, slBPerOctAttachment, slGammaAttachment, slGainAttachment, slTuningAttachment, slDynamicRangeAttachment, slDBScaleAttachment, slTunerStatusAttachment;
     
     Label lbDetuning;
     

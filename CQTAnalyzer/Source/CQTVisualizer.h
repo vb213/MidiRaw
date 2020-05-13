@@ -35,7 +35,8 @@ public:
     
     void setDBScale (float sc) { dBScale = bool (sc); }
     void setDynamicRange (float dr) { dynamicRange = dr; }
-
+    
+    void reallocateImage ();
 private:
     void timerCallback() override;
 

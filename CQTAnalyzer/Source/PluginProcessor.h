@@ -87,6 +87,7 @@ private:
     std::atomic<float>* tuningFreq;
     std::atomic<float>* dBScale;
     std::atomic<float>* dynamicRange;
+    std::atomic<float>* tunerStatus;
     
     double sr;
 

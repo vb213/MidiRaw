@@ -84,7 +84,7 @@ CqtanalyzerAudioProcessorEditor::CqtanalyzerAudioProcessorEditor (CqtanalyzerAud
     slGainAttachment.reset (new SliderAttachment (valueTreeState, "gain", slGain));
     slGain.setTextValueSuffix (" dB");
     
-    addAndMakeVisible (slTuning);
+    addChildComponent (slTuning);
     slTuning.setSliderStyle (Slider::IncDecButtons);
     slTuning.setTextBoxStyle (Slider::TextBoxBelow, false, 70, 20);
     slTuning.setColour (Slider::thumbColourId, Colours::grey);
@@ -106,9 +106,16 @@ CqtanalyzerAudioProcessorEditor::CqtanalyzerAudioProcessorEditor (CqtanalyzerAud
     slDynamicRange.setTextValueSuffix (" dB");
     slDynamicRange.addListener (this);
     
+    addAndMakeVisible (slTunerStatus);
+    slTunerStatus.setSliderStyle (Slider::LinearHorizontal);
+    slTunerStatus.setTextBoxStyle (Slider::TextBoxBelow, false, 70, 20);
+    slTunerStatus.setColour (Slider::thumbColourId, Colours::grey);
+    slTunerStatusAttachment.reset (new SliderAttachment (valueTreeState, "tunerStatus", slTunerStatus));
+    slTunerStatus.addListener (this);
+    
     
     // Labels
-    addAndMakeVisible (lbDetuning);
+    addChildComponent (lbDetuning);
     lbDetuning.setJustificationType (Justification::centred);
     
     addAndMakeVisible (lbFMin);
@@ -131,7 +138,7 @@ CqtanalyzerAudioProcessorEditor::CqtanalyzerAudioProcessorEditor (CqtanalyzerAud
     lbGain.setJustification (Justification::centred);
     lbGain.setText ("Gain", dontSendNotification);
     
-    addAndMakeVisible (lbTuning);
+    addChildComponent (lbTuning);
     lbTuning.setJustification (Justification::centred);
     lbTuning.setText ("", dontSendNotification);
     
@@ -252,43 +259,52 @@ void CqtanalyzerAudioProcessorEditor::resized()
 void CqtanalyzerAudioProcessorEditor::timerCallback()
 {
     // Update detuning-value
-    auto& cqt = audioProcessor.getCQT();
-    float detuning = 0.0f;
+    if (slTunerStatus.getValue() >= 0.5f)
+    {
+        auto& cqt = audioProcessor.getCQT();
+        float detuning = 0.0f;
 
-    if (cqt != nullptr)
-        detuning = cqt->getTuning();
-    else
-        detuning = 0.0f;
-
-
-
-    std::string detuningString;
-
-    if (slBPerOct.getValue() < 36)
-        detuningString = "NaN";
-    else{
-        std::stringstream s;
-        
-        if (round (detuning) > 0)
-            s << "+" << std::to_string (int (round (detuning))) << " cent";
+        if (cqt != nullptr)
+            detuning = cqt->getTuning();
         else
-            s << std::to_string (int (round (detuning))) << " cent";
+            detuning = 0.0f;
+
+
+
+        std::string detuningString;
+
+        if ((slBPerOct.getValue() < 36) || (slGamma.getValue() > 5.0f))
+            detuningString = "NaN";
+        else{
+            std::stringstream s;
         
-        detuningString = s.str();
+            if (round (detuning) > 0)
+                s << "+" << std::to_string (int (round (detuning))) << " cent";
+            else
+                s << std::to_string (int (round (detuning))) << " cent";
+        
+            detuningString = s.str();
+        }
+    
+        lbDetuning.setText (detuningString, dontSendNotification);
     }
-    
-    lbDetuning.setText (detuningString, dontSendNotification);
-    
     
     // Components for tuning are defined here for bigger height
     auto currentGcArea = gcTuning.getBounds();
     currentGcArea.removeFromTop (25);
     currentGcArea.setHeight (currentGcArea.getHeight() + 20);
     
-    slTuning.setBounds (currentGcArea.removeFromLeft (sliderSize - 5));
+    auto currentGcAreaLeft = currentGcArea.removeFromLeft (sliderSize);
+    auto currentGcAreaLeftSwitch = currentGcAreaLeft;
+    currentGcAreaLeftSwitch.removeFromLeft(sliderSize * 0.15f);
+    currentGcAreaLeftSwitch.removeFromRight(sliderSize * 0.15f);
+    
+    slTunerStatus.setBounds(currentGcAreaLeftSwitch.removeFromTop (currentGcArea.getHeight()/2 -5));
+    slTuning.setBounds (currentGcAreaLeft.removeFromBottom ( currentGcArea.getHeight()/2));
     lbDetuning.setBounds (currentGcArea.removeFromRight (sliderSize - 5));
     
     
+    // Make slider for range only in dB-Scale visible
     if ((slDBScale.getValue() >= 0.5f) && (slDynamicRange.isVisible() != true))
     {
         slDynamicRange.setVisible (true);
@@ -299,6 +315,20 @@ void CqtanalyzerAudioProcessorEditor::timerCallback()
         slDynamicRange.setVisible (false);
         lbDynamicRange.setVisible (false);
     }
+    
+    // Make controls for tuning onyl visible if activated
+    if (((slTunerStatus.getValue() >= 0.5f) && (slGamma.getValue() <= 5.0f) && (slBPerOct.getValue() >= 35.0f)) && (slTuning.isVisible() != true))
+    {
+        slTuning.setVisible (true);
+        lbTuning.setVisible (true);
+        lbDetuning.setVisible (true);
+    }
+    else if (((slTunerStatus.getValue() < 0.5f) || (slGamma.getValue() > 5.0f) || (slBPerOct.getValue() < 35.0f)) && (slTuning.isVisible() == true))
+    {
+        slTuning.setVisible (false);
+        lbTuning.setVisible (false);
+        lbDetuning.setVisible (false);
+    }
 }
 
 
@@ -308,8 +338,10 @@ void CqtanalyzerAudioProcessorEditor::sliderValueChanged (Slider *slider)
         cqtVisualizer.setDynamicRange ((float) slider->getValue());
     else if (slider == &slDBScale)
         cqtVisualizer.setDBScale ((float) slider->getValue());
+    else if (slider == &slFMin)
+        cqtVisualizer.reallocateImage();
     
-    else if ((slider == &slNOctaves) || (slider == &slBPerOct) || (slider == &slFMin))
+    if ((slider == &slNOctaves) || (slider == &slBPerOct) || (slider == &slFMin))
         generateScale (slNOctaves.getValue(), slBPerOct.getValue(), slFMin.getValue());
 }
 

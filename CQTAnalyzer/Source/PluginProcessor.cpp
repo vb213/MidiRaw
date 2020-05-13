@@ -48,7 +48,7 @@ CqtanalyzerAudioProcessor::CqtanalyzerAudioProcessor()
     tuningFreq = parameters.getRawParameterValue ("tuningFreq");
     dBScale = parameters.getRawParameterValue ("dBScale");
     dynamicRange = parameters.getRawParameterValue ("dynamicRange");
-
+    tunerStatus = parameters.getRawParameterValue ("tunerStatus");
 
     // add listeners to parameter changes
     parameters.addParameterListener ("fMin", this);
@@ -56,6 +56,7 @@ CqtanalyzerAudioProcessor::CqtanalyzerAudioProcessor()
     parameters.addParameterListener ("bPerOct", this);
     parameters.addParameterListener ("gamma", this);
     parameters.addParameterListener ("tuningFreq", this);
+    parameters.addParameterListener ("tunerStatus", this);
 }
 
 CqtanalyzerAudioProcessor::~CqtanalyzerAudioProcessor()
@@ -94,7 +95,7 @@ void CqtanalyzerAudioProcessor::changeProgramName (int index, const String& newN
 void CqtanalyzerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     // Initialize CQTThread
-    cqt = new CQTThread (sampleRate, *fMin, *nOctaves, *bPerOct, *gamma, *tuningFreq);
+    cqt = new CQTThread (sampleRate, *fMin, *nOctaves, *bPerOct, *gamma, *tuningFreq, *tunerStatus);
     copyBuffer.setSize (numberOfInputChannels, samplesPerBlock);
     copyBuffer.clear ();
     
@@ -157,7 +158,7 @@ void CqtanalyzerAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBu
             
         if (paramChanged > 10){
             paramChanged = 0;
-            cqt = new CQTThread (sampleRate, *fMin, *nOctaves, *bPerOct, *gamma, *tuningFreq);
+            cqt = new CQTThread (sampleRate, *fMin, *nOctaves, *bPerOct, *gamma, *tuningFreq, *tunerStatus);
             
             
             retainedCqt = cqt;
@@ -220,6 +221,8 @@ void CqtanalyzerAudioProcessor::parameterChanged (const String &parameterID, flo
     auto retainedCqt = cqt;
     if ((parameterID == "tuningFreq")&&(retainedCqt != nullptr))
         retainedCqt->setTuningFreq (newValue);
+    else if ((parameterID == "tunerStatus")&&(retainedCqt != nullptr))
+        retainedCqt->setTunerStatus(newValue);
     else if (paramChanged == 0)
         paramChanged = 1;
     
@@ -238,7 +241,7 @@ std::vector<std::unique_ptr<RangedAudioParameter>> CqtanalyzerAudioProcessor::cr
     // add your audio parameters here
     std::vector<std::unique_ptr<RangedAudioParameter>> params;
 
-    params.push_back (OSCParameterInterface::createParameterTheOldWay ("fMin", "Minimum Analysis Frequency ", "",
+    params.push_back (OSCParameterInterface::createParameterTheOldWay ("fMin", "Minimum Analysis Frequency ", "Hz",
                                                                        NormalisableRange<float> (55.0f, 300.0f, 0.1f), 110.0f,
                                                                        [](float value) {return String (value);}, nullptr));
     
@@ -254,11 +257,11 @@ std::vector<std::unique_ptr<RangedAudioParameter>> CqtanalyzerAudioProcessor::cr
                                                                        NormalisableRange<float> (0.0f, 30.0f, 0.1f), 0.0f,
                                                                        [](float value) {return String (value);}, nullptr));
     
-    params.push_back (OSCParameterInterface::createParameterTheOldWay ("gain", "Gain for Visualization ", "",
-                                                                       NormalisableRange<float> (-30.0f, 30.0f, 0.1f), 0.0f,
+    params.push_back (OSCParameterInterface::createParameterTheOldWay ("gain", "Gain for Visualization ", "dB",
+                                                                       NormalisableRange<float> (-35.0f, 35.0f, 0.1f), 0.0f,
                                                                        [](float value) {return String (value);}, nullptr));
     
-    params.push_back (OSCParameterInterface::createParameterTheOldWay ("tuningFreq", "Tuning Frequency ", "",
+    params.push_back (OSCParameterInterface::createParameterTheOldWay ("tuningFreq", "Tuning Frequency ", "Hz",
                                                                        NormalisableRange<float> (432.0f, 448.0f, 1.0f), 440.0f,
                                                                        [](float value) {return String (value);}, nullptr));
     
@@ -273,6 +276,14 @@ std::vector<std::unique_ptr<RangedAudioParameter>> CqtanalyzerAudioProcessor::cr
     params.push_back (OSCParameterInterface::createParameterTheOldWay ("dynamicRange", "Dynamic Range", "dB",
                                                                        NormalisableRange<float> (10.0f, 80.0f, 1.f), 40.0,
                                                                        [](float value) {return String (value, 0);}, nullptr));
+    
+    params.push_back (OSCParameterInterface::createParameterTheOldWay ("tunerStatus", "Tuner ", "",
+                                                                       NormalisableRange<float> (0.0f, 1.0f, 1.0f), 1.0f,
+                                                                       [](float value)
+                                                                       {
+                                                                            if (value >= 0.5f ) return "on";
+                                                                            else return "off";
+                                                                       }, nullptr));
     
     return params;
 }

@@ -59,6 +59,7 @@ class CQTThread  :  public ReferenceCountedObject, public Thread
         int binsPerSemitone;
         int nearestBinToTuning;
         float tuning;
+        const float gammaParam;
         
     };
 
@@ -76,7 +77,7 @@ public:
 
     using Ptr = ReferenceCountedObjectPtr<CQTThread>;
 
-    CQTThread (const double fs, const float fMin, const float nOctaves, const float B, const float gamma, const float tuningFreq);
+    CQTThread (const double fs, const float fMin, const float nOctaves, const float B, const float gamma, const float tuningFreq, const float initialTunerStatus);
     ~CQTThread();
 
     /** Writes samples into queue, which will be processed once enough samples are gathered.
@@ -88,6 +89,7 @@ public:
     BufferQueue<float>& getCqtFifo() { return cqtFifo; }
     
     void setTuningFreq (const float newTuning);
+    void setTunerStatus (const float newTunerStatus) { tunerStatus = bool (newTunerStatus); }
     
     
     float& getTuning() { return detuningCents; }
@@ -125,6 +127,7 @@ private:
     float detuningCents = 0.0f;
     int tuningIterationCounter = 0;
     int maxTuningCounter = 256;
+    bool tunerStatus;
     
     AudioBuffer<float> cqtBuffer;
     std::vector<float> cqtCollectorBuffer;

@@ -22,11 +22,11 @@
 
 #include "CQTThread.h"
 
-CQTThread::Params::Params (const double fs, const float fMin, const float nOctaves, const float B, const float gamma, const float tuningFreq)
+CQTThread::Params::Params (const double fs, const float fMin, const float nOctaves, const float B, const float gamma, const float tuningFreq) : gammaParam (gamma)
 {
     sampleRate = fs;
     bandwidth_max = 0.0f;
-    gainFactor = (nOctaves * nOctaves * nOctaves) / 60;  // empirical, can surely be improved
+    gainFactor = (nOctaves * nOctaves * nOctaves)/10;  // empirical, can surely be improved
     tuning = tuningFreq;
     nearestBinToTuning = 0;
 
@@ -87,7 +87,7 @@ CQTThread::Params::Params (const double fs, const float fMin, const float nOctav
 }
 
 
-CQTThread::CQTThread (const double fs, const float fMin, const float nOctaves, const float B, const float gamma, const float tuningFreq) :
+CQTThread::CQTThread (const double fs, const float fMin, const float nOctaves, const float B, const float gamma, const float tuningFreq, const float initialTunerStatus) :
 Thread ("CQT Thread"),
 params (fs, fMin, nOctaves, B, gamma, tuningFreq),
 audioBufferFifo (params.blockLength, numberOfBuffersInQueue),
@@ -106,6 +106,7 @@ cqtFifo (params.K, numberOfBuffersInCQTQueue)
     
     setTuningFreq(tuningFreq);
     integratedTuning = tuningFreq;
+    tunerStatus = bool (initialTunerStatus);
     
     computeWindows();
 
@@ -195,7 +196,7 @@ void CQTThread::run()
             for (int ii = 0; ii < fftData.size(); ++ii)
                 fftData.data()[ii] = NULL;
             
-            audioBufferFifo.pop (fftData.data());
+             audioBufferFifo.pop (fftData.data());
  
             // windowing each block in time-domain for smoother edges
             for (int ii = 0; ii < params.blockLength; ++ii)
@@ -244,7 +245,7 @@ void CQTThread::run()
                 }
                 cqtFifo.push (cqtCollectorBuffer.data(), params.K);
                 
-                if (activationIdx == true)
+                if ((activationIdx == true) && (params.gammaParam < 5.0f) && (tunerStatus == true))
                     calculateTuning();
             }
             
@@ -295,7 +296,12 @@ void CQTThread::calculateTuning()
     startTuning:
 
     
+    // safety if tuning bin is shifted so often that it is out of bounds
+    if ((params.nearestBinToTuning < 2) || ((params.nearestBinToTuning-1) == params.K))
+        setTuningFreq (params.tuning);
+    
     int modTuning = params.nearestBinToTuning % params.binsPerSemitone;
+    
     
     std::vector<float> summedCqt (3, 0.0f);
 

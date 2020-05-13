@@ -57,6 +57,11 @@ void CQTVisualizer::timerCallback()
         repaint();
 }
 
+void CQTVisualizer::reallocateImage()
+{
+    reallocateImage (image.getHeight());
+}
+
 void CQTVisualizer::reallocateImage (const int imageHeight)
 {
     image = Image (Image::RGB, imageWidth, imageHeight, true);
