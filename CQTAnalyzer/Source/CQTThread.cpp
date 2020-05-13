@@ -342,16 +342,20 @@ void CQTThread::calculateTuning()
                                  (summedCqt[2] - summedCqt[1]) * (b - a));
     
     // some sort of integration to smoothen the results
-    if (tuningIterationCounter < maxTuningCounter)
-        integratedTuning = newTuning/tuningIterationCounter + integratedTuning * (tuningIterationCounter - 1)/tuningIterationCounter;
-    else
-        integratedTuning = newTuning/maxTuningCounter + integratedTuning * (maxTuningCounter - 1)/maxTuningCounter;
+    if (tuningIterationCounter > maxTuningCounter)
+        tuningIterationCounter = maxTuningCounter;
+    
+    integratedTuning = newTuning/tuningIterationCounter + integratedTuning * (tuningIterationCounter - 1)/tuningIterationCounter;
 
     // conversion to cent
     detuningCents = 1200 * log2 (integratedTuning/params.tuning);
+
+    // Modulo, so the solution is in the range of +- 100
+    detuningCents = float (roundToInt (detuningCents) % 100);
     
-    if (detuningCents > 50.0)
-        detuningCents -= 100.0;
-    else if (detuningCents < -50.0)
-        detuningCents += 100.0;
+    // Limiting to +-50
+    if (detuningCents > 50.0f)
+        detuningCents -= 100.0f;
+    else if (detuningCents < -50.0f)
+        detuningCents += 100.0f;
 }

@@ -124,7 +124,7 @@ private:
     float integratedTuning;
     float detuningCents = 0.0f;
     int tuningIterationCounter = 0;
-    int maxTuningCounter = 128;
+    int maxTuningCounter = 256;
     
     AudioBuffer<float> cqtBuffer;
     std::vector<float> cqtCollectorBuffer;

@@ -100,7 +100,7 @@ CqtanalyzerAudioProcessorEditor::CqtanalyzerAudioProcessorEditor (CqtanalyzerAud
     
     addChildComponent (slDynamicRange);
     slDynamicRange.setSliderStyle (Slider::RotaryHorizontalVerticalDrag);
-    slDynamicRange.setTextBoxStyle (Slider::TextBoxBelow, false, 70, 20);
+    slDynamicRange.setTextBoxStyle (Slider::TextBoxBelow, true, 70, 20);
     slDynamicRange.setColour (Slider::thumbColourId, globalLaF.ClWidgetColours[3]);
     slDynamicRangeAttachment.reset (new SliderAttachment (valueTreeState, "dynamicRange", slDynamicRange));
     slDynamicRange.setTextValueSuffix (" dB");
@@ -219,9 +219,11 @@ void CqtanalyzerAudioProcessorEditor::resized()
     // UI control
     Rectangle<int> GainArea = area.removeFromRight (sliderSize * 0.7f);
     slDBScale.setBounds(GainArea.removeFromTop(40));
+    
     lbGain.setBounds (GainArea.removeFromBottom (labelOffset + 5));
     slGain.setBounds (GainArea.removeFromBottom (sliderSize));
     
+    GainArea.removeFromBottom(labelOffset);
     lbDynamicRange.setBounds (GainArea.removeFromBottom (labelOffset + 5));
     slDynamicRange.setBounds (GainArea.removeFromBottom (sliderSize));
     
