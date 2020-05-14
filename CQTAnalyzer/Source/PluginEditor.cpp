@@ -336,8 +336,6 @@ void CqtanalyzerAudioProcessorEditor::sliderValueChanged (Slider *slider)
         cqtVisualizer.setDynamicRange ((float) slider->getValue());
     else if (slider == &slDBScale)
         cqtVisualizer.setDBScale ((float) slider->getValue());
-    else if (slider == &slFMin)
-        cqtVisualizer.reallocateImage();
     
     if ((slider == &slNOctaves) || (slider == &slBPerOct) || (slider == &slFMin))
         generateScale (slNOctaves.getValue(), slBPerOct.getValue(), slFMin.getValue());
@@ -353,6 +351,9 @@ void CqtanalyzerAudioProcessorEditor::sliderDragEnded (Slider *slider)
 {
     DBG ("Slider drag ended");
     audioProcessor.setSliderDrag(false);
+    
+    if (slider == &slFMin)
+        cqtVisualizer.reallocateImage();
 }
 
 
