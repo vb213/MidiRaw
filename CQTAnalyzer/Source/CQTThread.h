@@ -125,9 +125,12 @@ private:
 
     float integratedTuning;
     float detuningCents = 0.0f;
+    
     int tuningIterationCounter = 0;
-    int maxTuningCounter = 256;
+    const int maxTuningCounter = 256;
     bool tunerStatus;
+    
+    const float gammaTh = 10.0f;
     
     AudioBuffer<float> cqtBuffer;
     std::vector<float> cqtCollectorBuffer;

@@ -29,7 +29,7 @@
 #define ProcessorClass CqtanalyzerAudioProcessor
 
 //==============================================================================
-class CqtanalyzerAudioProcessor  :  public AudioProcessorBase<IOTypes::AudioChannels<2>, IOTypes::AudioChannels<2>>
+class CqtanalyzerAudioProcessor  :  public AudioProcessorBase<IOTypes::AudioChannels<2>, IOTypes::AudioChannels<2>>, private Timer
 {
 public:
     constexpr static int numberOfInputChannels = 2;
@@ -67,9 +67,11 @@ public:
     //==============================================================================
     void parameterChanged (const String &parameterID, float newValue) override;
     void updateBuffers() override; // use this to implement a buffer update method
+    void timerCallback() override;
 
     CQTThread::Ptr& getCQT() { return cqt; }
     double& getSamplerate() { return sr; }
+    void setSliderDrag ( bool newStatus ) { sliderDrag = newStatus; }
     
     //======= Parameters ===========================================================
     std::vector<std::unique_ptr<RangedAudioParameter>> createParameterLayout();
@@ -90,13 +92,14 @@ private:
     std::atomic<float>* tunerStatus;
     
     double sr;
+    bool sliderDrag = false;
 
     
     AudioBuffer<float> copyBuffer;
     
     CQTThread::Ptr cqt;
     
-    int paramChanged = 0;
+    bool CqtParamChanged = false;
 
 
     //==============================================================================

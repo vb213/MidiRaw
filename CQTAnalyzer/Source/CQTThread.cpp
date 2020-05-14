@@ -245,7 +245,7 @@ void CQTThread::run()
                 }
                 cqtFifo.push (cqtCollectorBuffer.data(), params.K);
                 
-                if ((activationIdx == true) && (params.gammaParam < 5.0f) && (tunerStatus == true))
+                if ((activationIdx == true) && (params.gammaParam < gammaTh) && (tunerStatus == true))
                     calculateTuning();
             }
             

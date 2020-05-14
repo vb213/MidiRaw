@@ -70,12 +70,14 @@ CqtanalyzerAudioProcessorEditor::CqtanalyzerAudioProcessorEditor (CqtanalyzerAud
     slBPerOct.setTextBoxStyle (Slider::TextBoxBelow, false, 70, 20);
     slBPerOct.setColour (Slider::rotarySliderOutlineColourId, globalLaF.ClWidgetColours[1]);
     slBPerOctAttachment.reset (new SliderAttachment (valueTreeState, "bPerOct", slBPerOct));
+    slBPerOct.addListener (this);
     
     addAndMakeVisible (slGamma);
     slGamma.setSliderStyle (Slider::RotaryHorizontalVerticalDrag);
     slGamma.setTextBoxStyle (Slider::TextBoxBelow, false, 70, 20);
     slGamma.setColour (Slider::rotarySliderOutlineColourId, globalLaF.ClWidgetColours[2]);
     slGammaAttachment.reset (new SliderAttachment (valueTreeState, "gamma", slGamma));
+    slGamma.addListener (this);
     
     addAndMakeVisible (slGain);
     slGain.setSliderStyle (Slider::RotaryHorizontalVerticalDrag);
@@ -270,21 +272,17 @@ void CqtanalyzerAudioProcessorEditor::timerCallback()
             detuning = 0.0f;
 
 
-
         std::string detuningString;
 
-        if ((slBPerOct.getValue() < 36) || (slGamma.getValue() > 5.0f))
-            detuningString = "NaN";
-        else{
-            std::stringstream s;
+        std::stringstream s;
         
-            if (round (detuning) > 0)
-                s << "+" << std::to_string (int (round (detuning))) << " cent";
-            else
-                s << std::to_string (int (round (detuning))) << " cent";
+        if (round (detuning) > 0)
+            s << "+" << std::to_string (int (round (detuning))) << " cent";
+        else
+            s << std::to_string (int (round (detuning))) << " cent";
         
-            detuningString = s.str();
-        }
+        detuningString = s.str();
+        
     
         lbDetuning.setText (detuningString, dontSendNotification);
     }
@@ -317,13 +315,13 @@ void CqtanalyzerAudioProcessorEditor::timerCallback()
     }
     
     // Make controls for tuning onyl visible if activated
-    if (((slTunerStatus.getValue() >= 0.5f) && (slGamma.getValue() <= 5.0f) && (slBPerOct.getValue() >= 35.0f)) && (slTuning.isVisible() != true))
+    if (((slTunerStatus.getValue() >= 0.5f) && (slGamma.getValue() <= gammaTh) && (slBPerOct.getValue() >= 35.0f)) && (slTuning.isVisible() != true))
     {
         slTuning.setVisible (true);
         lbTuning.setVisible (true);
         lbDetuning.setVisible (true);
     }
-    else if (((slTunerStatus.getValue() < 0.5f) || (slGamma.getValue() > 5.0f) || (slBPerOct.getValue() < 35.0f)) && (slTuning.isVisible() == true))
+    else if (((slTunerStatus.getValue() < 0.5f) || (slGamma.getValue() > gammaTh) || (slBPerOct.getValue() < 35.0f)) && (slTuning.isVisible() == true))
     {
         slTuning.setVisible (false);
         lbTuning.setVisible (false);
@@ -343,6 +341,18 @@ void CqtanalyzerAudioProcessorEditor::sliderValueChanged (Slider *slider)
     
     if ((slider == &slNOctaves) || (slider == &slBPerOct) || (slider == &slFMin))
         generateScale (slNOctaves.getValue(), slBPerOct.getValue(), slFMin.getValue());
+}
+
+void CqtanalyzerAudioProcessorEditor::sliderDragStarted (Slider *slider)
+{
+    DBG ("Slider drag started");
+    audioProcessor.setSliderDrag(true);
+}
+
+void CqtanalyzerAudioProcessorEditor::sliderDragEnded (Slider *slider)
+{
+    DBG ("Slider drag ended");
+    audioProcessor.setSliderDrag(false);
 }
 
 

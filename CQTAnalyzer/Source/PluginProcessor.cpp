@@ -136,7 +136,12 @@ bool CqtanalyzerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layou
 
 void CqtanalyzerAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer&)
 {
-    double sampleRate = getSampleRate();
+    // Only restart CQT Thread wen params changed AND slider is not dragged anymore
+    if ((CqtParamChanged == true) && (sliderDrag == false))
+    {
+        CqtParamChanged = false;
+        startTimer(20);
+    }
     
     copyBuffer.clear ();
     
@@ -151,21 +156,6 @@ void CqtanalyzerAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBu
     if (retainedCqt != nullptr)
         retainedCqt->pushSamples (copyBuffer.getReadPointer (0), copyBuffer.getNumSamples());
     
-    // TODO: Implement timer-class for a more elegant change of params
-    if (paramChanged > 0)
-    {
-        ++paramChanged;
-            
-        if (paramChanged > 10){
-            paramChanged = 0;
-            cqt = new CQTThread (sampleRate, *fMin, *nOctaves, *bPerOct, *gamma, *tuningFreq, *tunerStatus);
-            
-            
-            retainedCqt = cqt;
-            if (retainedCqt != nullptr)
-                retainedCqt->pushSamples (buffer.getReadPointer (0), buffer.getNumSamples());
-            }
-        }
 }
 
 //==============================================================================
@@ -223,9 +213,9 @@ void CqtanalyzerAudioProcessor::parameterChanged (const String &parameterID, flo
         retainedCqt->setTuningFreq (newValue);
     else if ((parameterID == "tunerStatus")&&(retainedCqt != nullptr))
         retainedCqt->setTunerStatus(newValue);
-    else if (paramChanged == 0)
-        paramChanged = 1;
-    
+    else
+        CqtParamChanged = true;
+
 }
 
 void CqtanalyzerAudioProcessor::updateBuffers()
@@ -234,6 +224,11 @@ void CqtanalyzerAudioProcessor::updateBuffers()
     DBG ("IOHelper: output size: " << output.getSize());
 }
 
+void CqtanalyzerAudioProcessor::timerCallback()
+{
+    cqt = new CQTThread (getSamplerate(), *fMin, *nOctaves, *bPerOct, *gamma, *tuningFreq, *tunerStatus);
+    stopTimer();
+}
 
 //==============================================================================
 std::vector<std::unique_ptr<RangedAudioParameter>> CqtanalyzerAudioProcessor::createParameterLayout()
