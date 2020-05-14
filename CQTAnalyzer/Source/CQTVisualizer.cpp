@@ -1,7 +1,7 @@
 /*
 ==============================================================================
 This file is part of the IEM plug-in suite.
-Author: Felix Holzmüller
+Author: Daniel Rudrich
 Copyright (c) 2020 - Institute of Electronic Music and Acoustics (IEM)
 https://iem.at
 

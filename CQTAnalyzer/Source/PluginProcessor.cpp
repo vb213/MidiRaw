@@ -140,7 +140,7 @@ void CqtanalyzerAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBu
     if ((CqtParamChanged == true) && (sliderDrag == false))
     {
         CqtParamChanged = false;
-        startTimer(20);
+        startTimer (20);  // CQT is resetted in timer to avoid dropouts
     }
     
     copyBuffer.clear ();
@@ -212,7 +212,7 @@ void CqtanalyzerAudioProcessor::parameterChanged (const String &parameterID, flo
     if ((parameterID == "tuningFreq")&&(retainedCqt != nullptr))
         retainedCqt->setTuningFreq (newValue);
     else if ((parameterID == "tunerStatus")&&(retainedCqt != nullptr))
-        retainedCqt->setTunerStatus(newValue);
+        retainedCqt->setTunerStatus (newValue);
     else
         CqtParamChanged = true;
 
