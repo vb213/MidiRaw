@@ -186,12 +186,15 @@ void CQTThread::pushSamples (const float* data, int numSamples)
 
 void CQTThread::run()
 {
+    int cycleCounter = 0;
     while (! threadShouldExit())
     {
         if (! audioBufferFifo.dataAvailable())
             wait (5);
         else // do processing
         {
+            cycleCounter += 5;
+            cycleCounter = cycleCounter % params.K;
             // pop next buffer from  queue
             for (int ii = 0; ii < fftData.size(); ++ii)
                 fftData.data()[ii] = NULL;
@@ -217,7 +220,12 @@ void CQTThread::run()
                 {
                     if (ii < winLen)
                     {
-                        ifftData[ii] = std::complex<float> (fftData[2 * (ii + windows[k]->position)], fftData[2 * (ii + windows[k]->position) + 1]) * windows[k]->data()[ii];
+                        if (k == cycleCounter)
+                            ifftData[ii] = std::complex<float>(1.0f, 1.0f);
+                        else
+                            ifftData[ii] = std::complex<float>(0.0f, 0.0f);
+
+                        //ifftData[ii] = std::complex<float> (fftData[2 * (ii + windows[k]->position)], fftData[2 * (ii + windows[k]->position) + 1]) * windows[k]->data()[ii];
                     }
                     else
                         ifftData[ii] = 0;
@@ -238,8 +246,8 @@ void CQTThread::run()
             {
                 for (int k = 0; k < params.K; ++k)
                 {
-                    cqtCollectorBuffer[cqtCollectorBuffer.size() - k - 1] = cqtBuffer.getSample (k, ii);
-                    
+                    cqtCollectorBuffer[cqtCollectorBuffer.size() - k - 1] = cqtBuffer.getSample (k, ii);              
+
                     if ((cqtCollectorBuffer[cqtCollectorBuffer.size() - k - 1] > 0.25) && params.binsPerSemitone > 2)
                         activationIdx = true;
                 }

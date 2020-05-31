@@ -114,7 +114,7 @@ private:
 
     size_t numCollected;
 
-    enum State
+    enum class State
     {
         waitingForFreeSpace,
         collecting
