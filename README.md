@@ -6,8 +6,9 @@ In this free and Open-Source audio plug-in, a real-time capable, efficient FFT b
 [![Demovideo](https://imgur.com/download/T0sq3WI)](https://vimeo.com/418146505 "CQT Visualizer - Demovideo")
 
 ## Installation Guide
-To install the plug-in, simply move the VST-plug-in to your VST plug-in folder. That folder is usually located here:
+To install the plug-in, simply follow the instructions of the installer. As the installer is not signed, a warning prompt will be shown on Windows. At macOS 10.15+, the installer has to be started with "right click"->"Open".
 
+You can also move the VST-plug-in to your VST plug-in folder. That folder is usually located here:
 - macOS: /Library/Audio/Plug-Ins/VST or ~/Library/Audio/Plug-Ins/VST
 - Windows: C:\Programm Files\Steinberg\VstPlugins
 - Linux: /usr/lib/lxvst or /usr/local/lib/lxvst
