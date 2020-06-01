@@ -193,22 +193,35 @@ void CQTThread::run()
             wait (5);
         else // do processing
         {
-            cycleCounter += 5;
-            cycleCounter = cycleCounter % params.K;
-            // pop next buffer from  queue
-            for (int ii = 0; ii < fftData.size(); ++ii)
-                fftData.data()[ii] = NULL;
+            // Reset FFT-Vector to 0
+            for (int ii = 0; ii < fftData.size(); ii++)
+                fftData.data()[ii] = 0.0f;
             
-             audioBufferFifo.pop (fftData.data());
- 
-            // windowing each block in time-domain for smoother edges
+            // pop next buffer from  queue
+            audioBufferFifo.pop (fftData.data());
+
+            // Testsignal
             for (int ii = 0; ii < params.blockLength; ++ii)
             {
-                fftData.data()[ii] = fftData.data()[ii] * hannWindowForTimedomain[ii];
+                int periode = 48;
+                fftData.data()[ii] = dsp::FastMathApproximations::sin((ii % periode) * MathConstants<float>::twoPi / periode);
             }
-            
+ 
+            // Apply window in time domain for blockbased processing
+            FloatVectorOperations::multiply(fftData.data(), hannWindowForTimedomain.data(), params.blockLength);
+            //std::vector<std::complex<float>> fftOutput;
+            //std::vector<std::complex<float>> fftInput;
+
+            //fftOutput.resize(params.fftSize);
+            //fftInput.resize(params.fftSize);
+
+            //for (int ii = 0; ii < params.blockLength; ii++)
+            //    fftInput[ii] = std::complex<float>(fftData.data()[ii], 0.0f);
+
+
             // RFFT
-            fft.performRealOnlyForwardTransform (fftData.data(), false);
+            //fft.perform (fftInput.data(), fftOutput.data(), false);
+            fft.performRealOnlyForwardTransform(fftData.data(), true);
             
             // Iteration for each CQT-bin
             for (int k = 0; k < params.K; ++k)
@@ -216,17 +229,11 @@ void CQTThread::run()
                 int winLen = static_cast<int> (windows[k]->size());
                 
                 // conversion to complex and applying window
-                for (int ii = 0; ii < params.ifftSize; ++ii)
+                for (int ii = 0; ii < params.ifftSize; ii++)
                 {
                     if (ii < winLen)
-                    {
-                        if (k == cycleCounter)
-                            ifftData[ii] = std::complex<float>(1.0f, 1.0f);
-                        else
-                            ifftData[ii] = std::complex<float>(0.0f, 0.0f);
-
-                        //ifftData[ii] = std::complex<float> (fftData[2 * (ii + windows[k]->position)], fftData[2 * (ii + windows[k]->position) + 1]) * windows[k]->data()[ii];
-                    }
+                        ifftData[ii] = std::complex<float> (fftData[2 * (ii + windows[k]->position)], fftData[2 * (ii + windows[k]->position) + 1]) * windows[k]->data()[ii];
+                        //ifftData[ii] = fftOutput[ii + windows[k]->position] * windows[k]->data()[ii];
                     else
                         ifftData[ii] = 0;
                 }
@@ -235,46 +242,47 @@ void CQTThread::run()
                 // IFFT
                 ifft.perform (ifftData.data(), ifftData.data(), true);
                 
-                for (int ii = 0; ii < params.ifftSize; ++ii)
+                for (int ii = 0; ii < params.ifftSize; ii++)
                     cqtBuffer.addSample (k, ii, (params.fftSize/params.ifftSize * params.gainFactor * std::abs(ifftData.data()[ii])));
             }
             
             bool activationIdx = 0;
             
             // Setting samples and pushing into cqt-visualizer-FIFO
-            for (int ii = 0; ii < params.hopsize; ++ii)
+            for (int ii = 0; ii < params.hopsize; ii++)
             {
-                for (int k = 0; k < params.K; ++k)
+                for (int k = 0; k < params.K; k++)
                 {
                     cqtCollectorBuffer[cqtCollectorBuffer.size() - k - 1] = cqtBuffer.getSample (k, ii);              
 
-                    if ((cqtCollectorBuffer[cqtCollectorBuffer.size() - k - 1] > 0.25) && params.binsPerSemitone > 2)
+                    if ((cqtCollectorBuffer[cqtCollectorBuffer.size() - k - 1] > 0.1) && params.binsPerSemitone > 2)
                         activationIdx = true;
                 }
                 cqtFifo.push (cqtCollectorBuffer.data(), params.K);
-                
-                if ((activationIdx == true) && (params.gammaParam < gammaTh) && (tunerStatus == true))
-                    calculateTuning();
             }
             
             
             // shifting cqtBuffer
             for (int ii = 0; ii < params.ifftSize - params.hopsize; ++ii)
             {
-                for (int k = 0; k < params.K; ++k)
+                for (int k = 0; k < params.K; k++)
                 {
                     cqtBuffer.setSample (k, ii, cqtBuffer.getSample (k, ii + params.hopsize));
                 }
             }
             
             // clearing last entries of cqtBuffer
-            for (int ii = params.ifftSize - params.hopsize; ii < params.ifftSize; ++ii)
+            for (int ii = params.ifftSize - params.hopsize; ii < params.ifftSize; ii++)
             {
-                for (int k = 0; k < params.K; ++k)
+                for (int k = 0; k < params.K; k++)
                 {
                     cqtBuffer.setSample (k, ii, 0.0f);
                 }
             }
+
+            // Start tuner
+            if ((activationIdx == true) && (params.gammaParam < gammaTh) && (tunerStatus == true))
+                calculateTuning();
         }
     }
 }
