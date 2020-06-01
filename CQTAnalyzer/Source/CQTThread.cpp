@@ -241,9 +241,11 @@ void CQTThread::run()
 
                 // IFFT
                 ifft.perform (ifftData.data(), ifftData.data(), true);
-                
+
                 for (int ii = 0; ii < params.ifftSize; ii++)
                     cqtBuffer.addSample (k, ii, (params.fftSize/params.ifftSize * params.gainFactor * std::abs(ifftData.data()[ii])));
+                if (k==146)
+                    DBG(params.fftSize / params.ifftSize * params.gainFactor * std::abs(ifftData.data()[1]));  // 37.something on windows
             }
             
             bool activationIdx = 0;
@@ -253,7 +255,7 @@ void CQTThread::run()
             {
                 for (int k = 0; k < params.K; k++)
                 {
-                    cqtCollectorBuffer[cqtCollectorBuffer.size() - k - 1] = cqtBuffer.getSample (k, ii);              
+                    cqtCollectorBuffer[cqtCollectorBuffer.size() - k - 1] = cqtBuffer.getSample (k, ii);      
 
                     if ((cqtCollectorBuffer[cqtCollectorBuffer.size() - k - 1] > 0.1) && params.binsPerSemitone > 2)
                         activationIdx = true;
