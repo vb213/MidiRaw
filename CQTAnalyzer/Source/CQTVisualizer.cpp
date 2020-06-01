@@ -1,7 +1,7 @@
 /*
 ==============================================================================
 This file is part of the IEM plug-in suite.
-Author: Felix Holzmüller
+Author: Daniel Rudrich
 Copyright (c) 2020 - Institute of Electronic Music and Acoustics (IEM)
 https://iem.at
 
@@ -23,8 +23,12 @@ along with this software.  If not, see <https://www.gnu.org/licenses/>.
 #include "CQTVisualizer.h"
 #include "Utilities/Parula.h"
 
-CQTVisualizer::CQTVisualizer (CQTThread::Ptr& cqtThread) : cqt (cqtThread)
+CQTVisualizer::CQTVisualizer (CQTThread::Ptr& cqtThread, AudioProcessorValueTreeState& vts) : cqt (cqtThread)
 {
+    
+    dBScale = bool (*vts.getRawParameterValue ("dBScale"));
+    dynamicRange = *vts.getRawParameterValue ("dynamicRange");
+    
     startTimer (20);
 }
 
@@ -53,6 +57,11 @@ void CQTVisualizer::timerCallback()
         repaint();
 }
 
+void CQTVisualizer::reallocateImage()
+{
+    reallocateImage (image.getHeight());
+}
+
 void CQTVisualizer::reallocateImage (const int imageHeight)
 {
     image = Image (Image::RGB, imageWidth, imageHeight, true);
@@ -76,11 +85,21 @@ void CQTVisualizer::updateData()
         for (int i = 0; i < numColsAvailable; ++i)
         {
             fifo.pop (poppedData.data());
-
+            const float kFactor = ((127)/dynamicRange);
+            
             for (int h = 0; h < image.getHeight(); ++h)
             {
-                const float val = poppedData[h];
-                const int colourIndex = jlimit (0, 127, roundToInt (val * 127));
+                float val;
+                
+                if (dBScale == false)
+                {
+                    val = poppedData[h] * 127;
+                }
+                else
+                {
+                    val = 20*log10 (poppedData[h]) * kFactor + 127;
+                }
+                const int colourIndex = jlimit (0, 127, roundToInt (val));
                 const auto colour = Colour (parula[colourIndex][0], parula[colourIndex][1], parula[colourIndex][2]);
                 image.setPixelAt (imageOffset, h, colour);
             }

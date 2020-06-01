@@ -1,11 +1,17 @@
 ## Known issues and improvements:
 ### Issues:
-- Only left channel is analyzed, maybe conversion to mono would be better
 
 ### Possible improvements:
 - Send Frequency and Value of highest peaks via OSC, i.e. for external visualization
 
 # Changes:
+## v0.4.3:
+- Fixed bug, where non-valid results are occuring at Windows-PCs
+- Toggle switch for visualization in linear and logarithmic ("dB") values is added
+- Range setting when vusualization in dB
+- Redesign of tuner-section
+- Minor improvements in the CQT-calculations
+
 ## v0.4.2:
 - Completely new, asymmetric, more accurate window calculation
 - Assertion, thrown when opening DAW fixed

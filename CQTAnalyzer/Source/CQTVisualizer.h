@@ -1,7 +1,7 @@
 /*
 ==============================================================================
 This file is part of the IEM plug-in suite.
-Author: Felix Holzmüller
+Author: Daniel Rudrich
 Copyright (c) 2020 - Institute of Electronic Music and Acoustics (IEM)
 https://iem.at
 
@@ -29,10 +29,14 @@ class CQTVisualizer : public Component, private Timer
     static constexpr int imageWidth = 2000;
 
 public:
-    CQTVisualizer (CQTThread::Ptr& cqt);
+    CQTVisualizer (CQTThread::Ptr& cqt, AudioProcessorValueTreeState& vts);
 
     void paint (Graphics& g) override;
-
+    
+    void setDBScale (float sc) { dBScale = bool (sc); }
+    void setDynamicRange (float dr) { dynamicRange = dr; }
+    
+    void reallocateImage ();
 private:
     void timerCallback() override;
 
@@ -45,6 +49,11 @@ private:
 
     Image image;
     int imageOffset;
+    
+    bool dBScale;
+    float peakLevel;
+    float dynamicRange;
+    
 
     std::vector<float> poppedData;
 

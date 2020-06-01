@@ -22,12 +22,13 @@
 
 #include "CQTThread.h"
 
-CQTThread::Params::Params (const double fs, const float fMin, const float nOctaves, const float B, const float gamma, const float tuningFreq)
+CQTThread::Params::Params (const double fs, const float fMin, const float nOctaves, const float B, const float gamma, const float tuningFreq) : gammaParam (gamma)
 {
     sampleRate = fs;
     bandwidth_max = 0.0f;
-    gainFactor = (nOctaves * nOctaves * nOctaves) / 10;  // empirical, can surely be improved
+    gainFactor = (nOctaves * nOctaves * nOctaves)/10;  // empirical, can surely be improved
     tuning = tuningFreq;
+    nearestBinToTuning = 0;
 
     const double Q = 1.0 / (exp2 (1.0 / B) - exp2 (-1.0 / B));
     const double alpha = 1 / Q;
@@ -47,8 +48,6 @@ CQTThread::Params::Params (const double fs, const float fMin, const float nOctav
     frequencies.resize (K);
     B_gammacorrected.resize(K);
     
-    float minOffset = 100.0f;
-    
     for (int k = 0; k < K; ++k)
     {
         
@@ -56,13 +55,6 @@ CQTThread::Params::Params (const double fs, const float fMin, const float nOctav
             frequencies[k] = fMin;
         else
             frequencies[k] = frequencies[k - 1] * m;
-        
-        // TODO: SOFTCODE
-        if (fabs (frequencies[k] - tuningFreq) < minOffset)
-        {
-            nearestBinToTuning = k;
-            minOffset = fabs (frequencies[k] - tuningFreq);
-        }
         
         //bandwidth
         bandwidth[k] = alpha * frequencies[k] + gamma;
@@ -95,7 +87,7 @@ CQTThread::Params::Params (const double fs, const float fMin, const float nOctav
 }
 
 
-CQTThread::CQTThread (const double fs, const float fMin, const float nOctaves, const float B, const float gamma, const float tuningFreq) :
+CQTThread::CQTThread (const double fs, const float fMin, const float nOctaves, const float B, const float gamma, const float tuningFreq, const float initialTunerStatus) :
 Thread ("CQT Thread"),
 params (fs, fMin, nOctaves, B, gamma, tuningFreq),
 audioBufferFifo (params.blockLength, numberOfBuffersInQueue),
@@ -105,12 +97,17 @@ ifft (params.ifftOrder),
 cqtFifo (params.K, numberOfBuffersInCQTQueue)
 {
     fftData.resize (2 * params.fftSize);
-    ifftData.resize (params.ifftSize);
+    ifftInData.resize (params.ifftSize);
+    ifftOutData.resize(params.ifftSize);
 
     cqtBuffer.setSize (params.K, params.ifftSize);
+    cqtBuffer.clear();
+
     cqtCollectorBuffer.resize (params.K);
     
+    setTuningFreq(tuningFreq);
     integratedTuning = tuningFreq;
+    tunerStatus = bool (initialTunerStatus);
     
     computeWindows();
 
@@ -121,7 +118,7 @@ cqtFifo (params.K, numberOfBuffersInCQTQueue)
 CQTThread::~CQTThread()
 {
     signalThreadShouldExit();
-    stopThread (1000);
+    stopThread (500);
 }
 
 
@@ -167,12 +164,11 @@ void CQTThread::computeWindows()
                 frequencyDifference[jj] = fabs (windowFrequencies[jj] - (firstBin + ii) * params.df);
             
             // find minimum difference
-            int win_idx = int (std::min_element (frequencyDifference.begin(), frequencyDifference.end()) - frequencyDifference.begin());
+            const int win_idx = int (std::min_element (frequencyDifference.begin(), frequencyDifference.end()) - frequencyDifference.begin());
             
             // Store results in window-array
             windows[k]->operator[] (ii) = hannLookup[win_idx];
         }
-
         
         // fft normalization
         FloatVectorOperations::multiply (windows[k]->data(), 1.0f / params.fftSize, static_cast<int> (windows[k]->size()));
@@ -197,20 +193,18 @@ void CQTThread::run()
             wait (5);
         else // do processing
         {
-            // pop next buffer from  queue
-            for (int ii = 0; ii < fftData.size(); ++ii)
-                fftData.data()[ii] = NULL;
+            // Reset FFT-Vector to 0
+            for (int ii = 0; ii < fftData.size(); ii++)
+                fftData.data()[ii] = 0.0f;
             
+            // pop next buffer from  queue
             audioBufferFifo.pop (fftData.data());
  
-            // windowing each block in time-domain for smoother edges
-            for (int ii = 0; ii < params.blockLength; ++ii)
-            {
-                fftData.data()[ii] = fftData.data()[ii] * hannWindowForTimedomain[ii];
-            }
-            
+            // Apply window in time domain for blockbased processing
+            FloatVectorOperations::multiply(fftData.data(), hannWindowForTimedomain.data(), params.blockLength);
+
             // RFFT
-            fft.performRealOnlyForwardTransform (fftData.data(), false);
+            fft.performRealOnlyForwardTransform(fftData.data(), true);
             
             // Iteration for each CQT-bin
             for (int k = 0; k < params.K; ++k)
@@ -218,60 +212,69 @@ void CQTThread::run()
                 int winLen = static_cast<int> (windows[k]->size());
                 
                 // conversion to complex and applying window
-                for (int ii = 0; ii < params.ifftSize; ++ii)
+                for (int ii = 0; ii < params.ifftSize; ii++)
                 {
                     if (ii < winLen)
-                    {
-                        ifftData[ii] = std::complex<float>(fftData[2 * (ii + windows[k]->position)], fftData[2 * (ii + windows[k]->position) + 1]) * windows[k]->data()[ii];
-                    }
+                        ifftInData[ii] = std::complex<float> (fftData[2 * (ii + windows[k]->position)], fftData[2 * (ii + windows[k]->position) + 1]) * windows[k]->data()[ii];
                     else
-                        ifftData[ii] = 0;
+                        ifftInData[ii] = std::complex<float> (0.0f, 0.0f);
+
+                    ifftOutData[ii] = std::complex<float> (0.0f, 0.0f);
                 }
                 
 
                 // IFFT
-                ifft.perform (ifftData.data(), ifftData.data(), true);
-                
-                for (int ii = 0; ii < params.ifftSize; ++ii)
-                    cqtBuffer.addSample (k, ii, (params.fftSize/params.ifftSize * params.gainFactor * std::abs(ifftData.data()[ii])));
+                ifft.perform (ifftInData.data(), ifftOutData.data(), true);
+
+                for (int ii = 0; ii < params.ifftSize; ii++)
+                    cqtBuffer.addSample(k, ii, (params.fftSize / params.ifftSize * params.gainFactor * std::abs(ifftOutData.data()[ii])));
             }
             
             bool activationIdx = 0;
             
             // Setting samples and pushing into cqt-visualizer-FIFO
-            for (int ii = 0; ii < params.hopsize; ++ii)
+            for (int ii = 0; ii < params.hopsize; ii++)
             {
-                for (int k = 0; k < params.K; ++k)
+                for (int k = 0; k < params.K; k++)
                 {
-                    cqtCollectorBuffer[cqtCollectorBuffer.size() - k - 1] = cqtBuffer.getSample (k, ii);
-                    
-                    if ((cqtCollectorBuffer[cqtCollectorBuffer.size() - k - 1] > 0.25) && params.binsPerSemitone > 2)
+                    cqtCollectorBuffer[cqtCollectorBuffer.size() - k - 1] = cqtBuffer.getSample (k, ii);      
+
+                    if ((cqtCollectorBuffer[cqtCollectorBuffer.size() - k - 1] > 0.1) && params.binsPerSemitone > 2)
                         activationIdx = true;
                 }
+
                 cqtFifo.push (cqtCollectorBuffer.data(), params.K);
-                
-                if (activationIdx == true)
-                    calculateTuning();
             }
             
             
             // shifting cqtBuffer
             for (int ii = 0; ii < params.ifftSize - params.hopsize; ++ii)
-            {
-                for (int k = 0; k < params.K; ++k)
-                {
+                for (int k = 0; k < params.K; k++)
                     cqtBuffer.setSample (k, ii, cqtBuffer.getSample (k, ii + params.hopsize));
-                }
-            }
             
             // clearing last entries of cqtBuffer
-            for (int ii = params.ifftSize - params.hopsize; ii < params.ifftSize; ++ii)
-            {
-                for (int k = 0; k < params.K; ++k)
-                {
-                    cqtBuffer.setSample (k, ii, 0);
-                }
-            }
+            for (int ii = params.ifftSize - params.hopsize; ii < params.ifftSize; ii++)
+                for (int k = 0; k < params.K; k++)
+                    cqtBuffer.setSample (k, ii, 0.0f);
+
+            // Start tuner
+            if ((activationIdx == true) && (params.gammaParam < gammaTh) && (tunerStatus == true))
+                calculateTuning();
+        }
+    }
+}
+
+
+void CQTThread::setTuningFreq (const float newTuning)
+{
+    params.tuning = newTuning;
+    
+    float minOffset = 100.0f;
+    for (int k = 0; k < params.K; k++){
+        if (fabs (params.frequencies[k] - params.tuning) < minOffset)
+        {
+            params.nearestBinToTuning = k;
+            minOffset = fabs (params.frequencies[k] - params.tuning);
         }
     }
 }
@@ -282,26 +285,16 @@ void CQTThread::calculateTuning()
     ++tuningIterationCounter;
     std::reverse(cqtCollectorBuffer.begin(), cqtCollectorBuffer.end());
     
-    if (setTuningFlag)
-    {
-        float minOffset = 100.0f;
-        params.tuning = currentTuningFreq;
-        for (int k = 0; k < params.K; k++){
-            if (fabs (params.frequencies[k] - currentTuningFreq) < minOffset)
-            {
-                params.nearestBinToTuning = k;
-                minOffset = fabs (params.frequencies[k] - currentTuningFreq);
-            }
-        }
-    }
-
-    int tuningBin = params.nearestBinToTuning;
-    
     // start from here if maximum isnt at the tuning-bin
     startTuning:
 
     
-    int modTuning = tuningBin % params.binsPerSemitone;
+    // safety if tuning bin is shifted so often that it is out of bounds
+    if ((params.nearestBinToTuning < 2) || ((params.nearestBinToTuning-1) == params.K))
+        setTuningFreq (params.tuning);
+    
+    int modTuning = params.nearestBinToTuning % params.binsPerSemitone;
+    
     
     std::vector<float> summedCqt (3, 0.0f);
 
@@ -327,19 +320,19 @@ void CQTThread::calculateTuning()
     // shifting tuning-center if above or below the next bin
     if (summedCqt[0] > summedCqt[1])
     {
-        tuningBin -= 1;
+        params.nearestBinToTuning -= 1;
         goto startTuning;
     }
     else if (summedCqt[2] > summedCqt[1])
     {
-        tuningBin += 1;
+        params.nearestBinToTuning += 1;
         goto startTuning;
     }
 
     // saving frequencies for more compact calculation
-    float a = params.frequencies[tuningBin - 1];
-    float b = params.frequencies[tuningBin];
-    float c = params.frequencies[tuningBin + 1];
+    float a = params.frequencies[params.nearestBinToTuning - 1];
+    float b = params.frequencies[params.nearestBinToTuning];
+    float c = params.frequencies[params.nearestBinToTuning + 1];
     
     // actual calculation based upon parabolic interpolation
     float newTuning = b + 0.5 * ((summedCqt[0] - summedCqt[1]) * pow((c - b), 2) -
@@ -348,16 +341,20 @@ void CQTThread::calculateTuning()
                                  (summedCqt[2] - summedCqt[1]) * (b - a));
     
     // some sort of integration to smoothen the results
-    if (tuningIterationCounter < maxTuningCounter)
-        integratedTuning = newTuning/tuningIterationCounter + integratedTuning * (tuningIterationCounter - 1)/tuningIterationCounter;
-    else
-        integratedTuning = newTuning/maxTuningCounter + integratedTuning * (maxTuningCounter - 1)/maxTuningCounter;
+    if (tuningIterationCounter > maxTuningCounter)
+        tuningIterationCounter = maxTuningCounter;
+    
+    integratedTuning = newTuning/tuningIterationCounter + integratedTuning * (tuningIterationCounter - 1)/tuningIterationCounter;
 
     // conversion to cent
     detuningCents = 1200 * log2 (integratedTuning/params.tuning);
+
+    // Modulo, so the solution is in the range of +- 100
+    detuningCents = float (roundToInt (detuningCents) % 100);
     
-    if (detuningCents > 50.0)
-        detuningCents -= 50.0;
-    else if (detuningCents < -50.0)
-        detuningCents += 50.0;
+    // Limiting to +-50
+    if (detuningCents > 50.0f)
+        detuningCents -= 100.0f;
+    else if (detuningCents < -50.0f)
+        detuningCents += 100.0f;
 }

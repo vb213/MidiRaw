@@ -52,13 +52,14 @@ class CQTThread  :  public ReferenceCountedObject, public Thread
         int ifftOrder, ifftSize;
         int blockLength;
         int hopsize;
-        float df;
-        float bandwidth_max;
-        float gainFactor;
+        double df;
+        double bandwidth_max;
+        double gainFactor;
         int overlap;
         int binsPerSemitone;
         int nearestBinToTuning;
         float tuning;
+        const float gammaParam;
         
     };
 
@@ -76,7 +77,7 @@ public:
 
     using Ptr = ReferenceCountedObjectPtr<CQTThread>;
 
-    CQTThread (const double fs, const float fMin, const float nOctaves, const float B, const float gamma, const float tuningFreq);
+    CQTThread (const double fs, const float fMin, const float nOctaves, const float B, const float gamma, const float tuningFreq, const float initialTunerStatus);
     ~CQTThread();
 
     /** Writes samples into queue, which will be processed once enough samples are gathered.
@@ -87,13 +88,11 @@ public:
      */
     BufferQueue<float>& getCqtFifo() { return cqtFifo; }
     
-    void setTuningFreq( float newTuning ){
-        setTuningFlag = true;
-        currentTuningFreq = newTuning;
-    }
+    void setTuningFreq (const float newTuning);
+    void setTunerStatus (const float newTunerStatus) { tunerStatus = bool (newTunerStatus); }
     
     
-    float getTuning() { return detuningCents; }
+    float& getTuning() { return detuningCents; }
 
 private:
 
@@ -108,7 +107,6 @@ private:
     void calculateTuning();
 
     Params params;
-    float currentTuningFreq = 0.0f;
 
     BufferQueue<float> audioBufferFifo;
     OverlappingSampleCollector<float> collector;
@@ -119,7 +117,7 @@ private:
     std::vector<float> fftData;
 
     FFT ifft;
-    std::vector<std::complex<float>> ifftData;
+    std::vector<std::complex<float>> ifftInData, ifftOutData;
 
     std::vector<std::unique_ptr<WindowWithPosition>> windows;
     
@@ -127,9 +125,12 @@ private:
 
     float integratedTuning;
     float detuningCents = 0.0f;
+    
     int tuningIterationCounter = 0;
-    int maxTuningCounter = 128;
-    bool setTuningFlag = false;
+    const int maxTuningCounter = 256;
+    bool tunerStatus;
+    
+    const float gammaTh = 10.0f;
     
     AudioBuffer<float> cqtBuffer;
     std::vector<float> cqtCollectorBuffer;

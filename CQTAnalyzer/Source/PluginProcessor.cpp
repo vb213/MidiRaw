@@ -46,7 +46,9 @@ CqtanalyzerAudioProcessor::CqtanalyzerAudioProcessor()
     gamma = parameters.getRawParameterValue ("gamma");
     gain = parameters.getRawParameterValue ("gain");
     tuningFreq = parameters.getRawParameterValue ("tuningFreq");
-
+    dBScale = parameters.getRawParameterValue ("dBScale");
+    dynamicRange = parameters.getRawParameterValue ("dynamicRange");
+    tunerStatus = parameters.getRawParameterValue ("tunerStatus");
 
     // add listeners to parameter changes
     parameters.addParameterListener ("fMin", this);
@@ -54,6 +56,7 @@ CqtanalyzerAudioProcessor::CqtanalyzerAudioProcessor()
     parameters.addParameterListener ("bPerOct", this);
     parameters.addParameterListener ("gamma", this);
     parameters.addParameterListener ("tuningFreq", this);
+    parameters.addParameterListener ("tunerStatus", this);
 }
 
 CqtanalyzerAudioProcessor::~CqtanalyzerAudioProcessor()
@@ -92,7 +95,12 @@ void CqtanalyzerAudioProcessor::changeProgramName (int index, const String& newN
 void CqtanalyzerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     // Initialize CQTThread
-    cqt = new CQTThread (sampleRate, *fMin, *nOctaves, *bPerOct, *gamma, *tuningFreq);
+    cqt = new CQTThread (sampleRate, *fMin, *nOctaves, *bPerOct, *gamma, *tuningFreq, *tunerStatus);
+    copyBuffer.setSize (numberOfInputChannels, samplesPerBlock);
+    copyBuffer.clear ();
+    
+    sr = sampleRate;
+
 }
 
 void CqtanalyzerAudioProcessor::releaseResources()
@@ -126,36 +134,28 @@ bool CqtanalyzerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layou
 #endif
 
 
-void CqtanalyzerAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiBuffer&)
+void CqtanalyzerAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer&)
 {
-    double sampleRate = getSampleRate();
-       
-    float gainLinear = pow (10, *gain/20.0);
-    buffer.applyGain (gainLinear);
+    // Only restart CQT Thread wen params changed AND slider is not dragged anymore
+    if ((CqtParamChanged == true) && (sliderDrag == false))
+    {
+        CqtParamChanged = false;
+        startTimer (20);  // CQT is resetted in timer to avoid dropouts
+    }
+    
+    copyBuffer.clear ();
+    
+    // Copy and add buffer from all channels for a 'mono' spectrogram
+    for (int ii = 0; ii < numberOfInputChannels; ++ii)
+        copyBuffer.addFrom (0, 0, buffer, ii, 0, buffer.getNumSamples());
+
+    copyBuffer.applyGain (0, 0, copyBuffer.getNumSamples(), pow (10, *gain/20.0) / numberOfInputChannels);
     
     // Here are the samples pushed into the buffer for QCT analysis
-    // TODO: Currently only analyzing left channel --> conversion to momo could be useful
     auto retainedCqt = cqt;
     if (retainedCqt != nullptr)
-        retainedCqt->pushSamples (buffer.getReadPointer (0), buffer.getNumSamples());
-
-    buffer.applyGain (1.0/gainLinear);
+        retainedCqt->pushSamples (copyBuffer.getReadPointer (0), copyBuffer.getNumSamples());
     
-    // TODO: Implement timer-class for a more elegant change of params
-    if (paramChanged > 0)
-    {
-        ++paramChanged;
-            
-        if (paramChanged > 10){
-            paramChanged = 0;
-            cqt = new CQTThread (sampleRate, *fMin, *nOctaves, *bPerOct, *gamma, *tuningFreq);
-            
-            
-            retainedCqt = cqt;
-            if (retainedCqt != nullptr)
-                retainedCqt->pushSamples (buffer.getReadPointer (0), buffer.getNumSamples());
-            }
-        }
 }
 
 //==============================================================================
@@ -207,12 +207,15 @@ void CqtanalyzerAudioProcessor::setStateInformation (const void* data, int sizeI
 void CqtanalyzerAudioProcessor::parameterChanged (const String &parameterID, float newValue)
 {
     DBG ("Parameter with ID " << parameterID << " has changed. New value: " << newValue);
-    //if (parameterID = 'tuningFreq')
-    if (parameterID == "tuningFreq")
-        cqt->setTuningFreq (newValue);
-    else if (paramChanged == 0)
-        paramChanged = 1;
     
+    auto retainedCqt = cqt;
+    if ((parameterID == "tuningFreq")&&(retainedCqt != nullptr))
+        retainedCqt->setTuningFreq (newValue);
+    else if ((parameterID == "tunerStatus")&&(retainedCqt != nullptr))
+        retainedCqt->setTunerStatus (newValue);
+    else
+        CqtParamChanged = true;
+
 }
 
 void CqtanalyzerAudioProcessor::updateBuffers()
@@ -221,6 +224,11 @@ void CqtanalyzerAudioProcessor::updateBuffers()
     DBG ("IOHelper: output size: " << output.getSize());
 }
 
+void CqtanalyzerAudioProcessor::timerCallback()
+{
+    cqt = new CQTThread (getSamplerate(), *fMin, *nOctaves, *bPerOct, *gamma, *tuningFreq, *tunerStatus);
+    stopTimer();
+}
 
 //==============================================================================
 std::vector<std::unique_ptr<RangedAudioParameter>> CqtanalyzerAudioProcessor::createParameterLayout()
@@ -228,29 +236,49 @@ std::vector<std::unique_ptr<RangedAudioParameter>> CqtanalyzerAudioProcessor::cr
     // add your audio parameters here
     std::vector<std::unique_ptr<RangedAudioParameter>> params;
 
-    params.push_back (OSCParameterInterface::createParameterTheOldWay ("fMin", "Minimum Analysis Frequency ", "",
-                                                       NormalisableRange<float> (55.0f, 300.0f, 0.1f), 110.0f,
-                                                       [](float value) {return String (value);}, nullptr));
+    params.push_back (OSCParameterInterface::createParameterTheOldWay ("fMin", "Minimum Analysis Frequency ", "Hz",
+                                                                       NormalisableRange<float> (55.0f, 300.0f, 0.1f), 110.0f,
+                                                                       [](float value) {return String (value);}, nullptr));
     
     params.push_back (OSCParameterInterface::createParameterTheOldWay ("nOctaves", "Number of Analyzed Octaves ", "",
-                                                       NormalisableRange<float> (1.0f, 8.0f, 1.0f), 5.0f,
-                                                       [](float value) {return String (value);}, nullptr));
+                                                                       NormalisableRange<float> (1.0f, 8.0f, 1.0f), 5.0f,
+                                                                       [](float value) {return String (value);}, nullptr));
     
     params.push_back (OSCParameterInterface::createParameterTheOldWay ("bPerOct", "Bins per Octave ", "",
-                                                       NormalisableRange<float> (12.0f, 72.0f, 12.0f), 48.0f,
-                                                       [](float value) {return String (value);}, nullptr));
+                                                                       NormalisableRange<float> (12.0f, 72.0f, 12.0f), 48.0f,
+                                                                       [](float value) {return String (value);}, nullptr));
     
     params.push_back (OSCParameterInterface::createParameterTheOldWay ("gamma", "Gamma (for better Time-Resolution at low frequencies) ", "",
-                                                       NormalisableRange<float> (0.0f, 30.0f, 0.1f), 0.0f,
-                                                       [](float value) {return String (value);}, nullptr));
+                                                                       NormalisableRange<float> (0.0f, 30.0f, 0.1f), 0.0f,
+                                                                       [](float value) {return String (value);}, nullptr));
     
-    params.push_back (OSCParameterInterface::createParameterTheOldWay ("gain", "Gain for Visualization ", "",
-                                                       NormalisableRange<float> (-30.0f, 30.0f, 0.1f), 0.0f,
-                                                       [](float value) {return String (value);}, nullptr));
+    params.push_back (OSCParameterInterface::createParameterTheOldWay ("gain", "Gain for Visualization ", "dB",
+                                                                       NormalisableRange<float> (-35.0f, 35.0f, 0.1f), 0.0f,
+                                                                       [](float value) {return String (value);}, nullptr));
     
-    params.push_back (OSCParameterInterface::createParameterTheOldWay ("tuningFreq", "Tuning Frequency ", "",
-                                                       NormalisableRange<float> (432.0f, 448.0f, 1.0f), 440.0f,
-                                                       [](float value) {return String (value);}, nullptr));
+    params.push_back (OSCParameterInterface::createParameterTheOldWay ("tuningFreq", "Tuning Frequency ", "Hz",
+                                                                       NormalisableRange<float> (432.0f, 448.0f, 1.0f), 440.0f,
+                                                                       [](float value) {return String (value);}, nullptr));
+    
+    params.push_back (OSCParameterInterface::createParameterTheOldWay ("dBScale", "dB Scale ", "",
+                                                                       NormalisableRange<float> (0.0f, 1.0f, 1.0f), 0.0f,
+                                                                       [](float value)
+                                                                       {
+                                                                           if (value >= 0.5f ) return "dB";
+                                                                           else return "lin";
+                                                                       }, nullptr));
+    
+    params.push_back (OSCParameterInterface::createParameterTheOldWay ("dynamicRange", "Dynamic Range", "dB",
+                                                                       NormalisableRange<float> (10.0f, 80.0f, 1.f), 40.0,
+                                                                       [](float value) {return String (value, 0);}, nullptr));
+    
+    params.push_back (OSCParameterInterface::createParameterTheOldWay ("tunerStatus", "Tuner ", "",
+                                                                       NormalisableRange<float> (0.0f, 1.0f, 1.0f), 1.0f,
+                                                                       [](float value)
+                                                                       {
+                                                                            if (value >= 0.5f ) return "on";
+                                                                            else return "off";
+                                                                       }, nullptr));
     
     return params;
 }

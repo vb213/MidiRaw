@@ -26,13 +26,15 @@
 
 //==============================================================================
 CqtanalyzerAudioProcessorEditor::CqtanalyzerAudioProcessorEditor (CqtanalyzerAudioProcessor& p, AudioProcessorValueTreeState& vts)
-    : AudioProcessorEditor (&p), audioProcessor (p), valueTreeState (vts), footer (p.getOSCParameterInterface()), cqtVisualizer (audioProcessor.getCQT())
+: AudioProcessorEditor (&p), audioProcessor (p), valueTreeState (vts), footer (p.getOSCParameterInterface()), cqtVisualizer (audioProcessor.getCQT(), vts)
 {
     // ============== BEGIN: essentials ======================
     // set GUI size and lookAndFeel
     //setSize(500, 300); // use this to create a fixed-size GUI
     setResizeLimits (650, 500, 1200, 1000); // use this to create a resizable GUI
     setLookAndFeel (&globalLaF);
+    
+    samplerate = p.getSampleRate();
 
     // make title and footer visible, and set the PluginName
     addAndMakeVisible (&title);
@@ -68,30 +70,54 @@ CqtanalyzerAudioProcessorEditor::CqtanalyzerAudioProcessorEditor (CqtanalyzerAud
     slBPerOct.setTextBoxStyle (Slider::TextBoxBelow, false, 70, 20);
     slBPerOct.setColour (Slider::rotarySliderOutlineColourId, globalLaF.ClWidgetColours[1]);
     slBPerOctAttachment.reset (new SliderAttachment (valueTreeState, "bPerOct", slBPerOct));
+    slBPerOct.addListener (this);
     
     addAndMakeVisible (slGamma);
     slGamma.setSliderStyle (Slider::RotaryHorizontalVerticalDrag);
     slGamma.setTextBoxStyle (Slider::TextBoxBelow, false, 70, 20);
     slGamma.setColour (Slider::rotarySliderOutlineColourId, globalLaF.ClWidgetColours[2]);
     slGammaAttachment.reset (new SliderAttachment (valueTreeState, "gamma", slGamma));
+    slGamma.addListener (this);
     
     addAndMakeVisible (slGain);
-    slGain.setSliderStyle (Slider::LinearVertical);
+    slGain.setSliderStyle (Slider::RotaryHorizontalVerticalDrag);
     slGain.setTextBoxStyle (Slider::TextBoxBelow, false, 70, 20);
-    slGain.setColour (Slider::thumbColourId, Colours::grey);
+    slGain.setColour (Slider::thumbColourId, globalLaF.ClWidgetColours[3]);
     slGainAttachment.reset (new SliderAttachment (valueTreeState, "gain", slGain));
     slGain.setTextValueSuffix (" dB");
     
-    addAndMakeVisible (slTuning);
+    addChildComponent (slTuning);
     slTuning.setSliderStyle (Slider::IncDecButtons);
     slTuning.setTextBoxStyle (Slider::TextBoxBelow, false, 70, 20);
     slTuning.setColour (Slider::thumbColourId, Colours::grey);
     slTuningAttachment.reset (new SliderAttachment (valueTreeState, "tuningFreq", slTuning));
     slTuning.setTextValueSuffix (" Hz");
     
+    addAndMakeVisible (slDBScale);
+    slDBScale.setSliderStyle (Slider::LinearHorizontal);
+    slDBScale.setTextBoxStyle (Slider::TextBoxBelow, false, 70, 20);
+    slDBScale.setColour (Slider::thumbColourId, Colours::grey);
+    slDBScaleAttachment.reset (new SliderAttachment (valueTreeState, "dBScale", slDBScale));
+    slDBScale.addListener (this);
+    
+    addChildComponent (slDynamicRange);
+    slDynamicRange.setSliderStyle (Slider::RotaryHorizontalVerticalDrag);
+    slDynamicRange.setTextBoxStyle (Slider::TextBoxBelow, true, 70, 20);
+    slDynamicRange.setColour (Slider::thumbColourId, globalLaF.ClWidgetColours[3]);
+    slDynamicRangeAttachment.reset (new SliderAttachment (valueTreeState, "dynamicRange", slDynamicRange));
+    slDynamicRange.setTextValueSuffix (" dB");
+    slDynamicRange.addListener (this);
+    
+    addAndMakeVisible (slTunerStatus);
+    slTunerStatus.setSliderStyle (Slider::LinearHorizontal);
+    slTunerStatus.setTextBoxStyle (Slider::TextBoxBelow, false, 70, 20);
+    slTunerStatus.setColour (Slider::thumbColourId, Colours::grey);
+    slTunerStatusAttachment.reset (new SliderAttachment (valueTreeState, "tunerStatus", slTunerStatus));
+    slTunerStatus.addListener (this);
+    
     
     // Labels
-    addAndMakeVisible (lbDetuning);
+    addChildComponent (lbDetuning);
     lbDetuning.setJustificationType (Justification::centred);
     
     addAndMakeVisible (lbFMin);
@@ -114,12 +140,16 @@ CqtanalyzerAudioProcessorEditor::CqtanalyzerAudioProcessorEditor (CqtanalyzerAud
     lbGain.setJustification (Justification::centred);
     lbGain.setText ("Gain", dontSendNotification);
     
-    addAndMakeVisible (lbTuning);
+    addChildComponent (lbTuning);
     lbTuning.setJustification (Justification::centred);
     lbTuning.setText ("", dontSendNotification);
     
+    addChildComponent (lbDynamicRange);
+    lbDynamicRange.setJustification (Justification::centred);
+    lbDynamicRange.setText ("Range", dontSendNotification);
+    
     // This is needed for correct scale when reopening UI
-    generateScale(slNOctaves.getValue() + 1, slFMin.getValue());
+    generateScale (slNOctaves.getValue(), slBPerOct.getValue(), slFMin.getValue());
     
     // Visualizer
     addAndMakeVisible (cqtVisualizer);
@@ -195,12 +225,18 @@ void CqtanalyzerAudioProcessorEditor::resized()
     
     area.removeFromBottom (sliderSize + labelOffset + 5);
 
-    Rectangle<int> GainArea = area;
+    // UI control
+    Rectangle<int> GainArea = area.removeFromRight (sliderSize * 0.7f);
+    slDBScale.setBounds(GainArea.removeFromTop(40));
     
-    lbGain.setBounds (GainArea.removeFromBottom(labelOffset + 5).removeFromRight(sliderSize/2));
-    slGain.setBounds (GainArea.removeFromRight(sliderSize/2));
-    area.removeFromRight (sliderSize/2 + 10);
+    lbGain.setBounds (GainArea.removeFromBottom (labelOffset + 5));
+    slGain.setBounds (GainArea.removeFromBottom (sliderSize));
     
+    GainArea.removeFromBottom(labelOffset);
+    lbDynamicRange.setBounds (GainArea.removeFromBottom (labelOffset + 5));
+    slDynamicRange.setBounds (GainArea.removeFromBottom (sliderSize));
+    
+    area.removeFromRight (10);
     
     
     // Labels for frequency scale
@@ -214,7 +250,7 @@ void CqtanalyzerAudioProcessorEditor::resized()
     
     // necessary for resizeable window
     if (slNOctaves.getValue() > 0)
-        generateScale((slNOctaves.getValue() + 1), slFMin.getValue());
+        generateScale (slNOctaves.getValue(), slBPerOct.getValue(), slFMin.getValue());
 
     area.removeFromRight(5);
     
@@ -225,14 +261,19 @@ void CqtanalyzerAudioProcessorEditor::resized()
 void CqtanalyzerAudioProcessorEditor::timerCallback()
 {
     // Update detuning-value
-    auto cqt = audioProcessor.getCQT();
-    const float detuning = cqt->getTuning();
+    if (slTunerStatus.getValue() >= 0.5f)
+    {
+        auto& cqt = audioProcessor.getCQT();
+        float detuning = 0.0f;
 
-    std::string detuningString;
+        if (cqt != nullptr)
+            detuning = cqt->getTuning();
+        else
+            detuning = 0.0f;
 
-    if (slBPerOct.getValue() < 36)
-        detuningString = "NaN";
-    else{
+
+        std::string detuningString;
+
         std::stringstream s;
         
         if (round (detuning) > 0)
@@ -241,31 +282,88 @@ void CqtanalyzerAudioProcessorEditor::timerCallback()
             s << std::to_string (int (round (detuning))) << " cent";
         
         detuningString = s.str();
+        
+    
+        lbDetuning.setText (detuningString, dontSendNotification);
     }
-    
-    lbDetuning.setText (detuningString, dontSendNotification);
-    
     
     // Components for tuning are defined here for bigger height
     auto currentGcArea = gcTuning.getBounds();
     currentGcArea.removeFromTop (25);
     currentGcArea.setHeight (currentGcArea.getHeight() + 20);
     
-    slTuning.setBounds (currentGcArea.removeFromLeft (sliderSize - 5));
+    auto currentGcAreaLeft = currentGcArea.removeFromLeft (sliderSize);
+    auto currentGcAreaLeftSwitch = currentGcAreaLeft;
+    currentGcAreaLeftSwitch.removeFromLeft(sliderSize * 0.15f);
+    currentGcAreaLeftSwitch.removeFromRight(sliderSize * 0.15f);
+    
+    slTunerStatus.setBounds(currentGcAreaLeftSwitch.removeFromTop (currentGcArea.getHeight()/2 -5));
+    slTuning.setBounds (currentGcAreaLeft.removeFromBottom ( currentGcArea.getHeight()/2));
     lbDetuning.setBounds (currentGcArea.removeFromRight (sliderSize - 5));
+    
+    
+    // Make slider for range only in dB-Scale visible
+    if ((slDBScale.getValue() >= 0.5f) && (slDynamicRange.isVisible() != true))
+    {
+        slDynamicRange.setVisible (true);
+        lbDynamicRange.setVisible (true);
+    }
+    else if ((slDBScale.getValue() < 0.5f) && (slDynamicRange.isVisible() == true))
+    {
+        slDynamicRange.setVisible (false);
+        lbDynamicRange.setVisible (false);
+    }
+    
+    // Make controls for tuning onyl visible if activated
+    if (((slTunerStatus.getValue() >= 0.5f) && (slGamma.getValue() <= gammaTh) && (slBPerOct.getValue() >= 35.0f)) && (slTuning.isVisible() != true))
+    {
+        slTuning.setVisible (true);
+        lbTuning.setVisible (true);
+        lbDetuning.setVisible (true);
+    }
+    else if (((slTunerStatus.getValue() < 0.5f) || (slGamma.getValue() > gammaTh) || (slBPerOct.getValue() < 35.0f)) && (slTuning.isVisible() == true))
+    {
+        slTuning.setVisible (false);
+        lbTuning.setVisible (false);
+        lbDetuning.setVisible (false);
+    }
 }
 
 
 void CqtanalyzerAudioProcessorEditor::sliderValueChanged (Slider *slider)
 {
-    generateScale(int(slNOctaves.getValue()) + 1, slFMin.getValue());
+    if (slider == &slDynamicRange)
+        cqtVisualizer.setDynamicRange ((float) slider->getValue());
+    else if (slider == &slDBScale)
+        cqtVisualizer.setDBScale ((float) slider->getValue());
+    
+    if ((slider == &slNOctaves) || (slider == &slBPerOct) || (slider == &slFMin))
+        generateScale (slNOctaves.getValue(), slBPerOct.getValue(), slFMin.getValue());
+}
+
+void CqtanalyzerAudioProcessorEditor::sliderDragStarted (Slider *slider)
+{
+    DBG ("Slider drag started");
+    audioProcessor.setSliderDrag(true);
+}
+
+void CqtanalyzerAudioProcessorEditor::sliderDragEnded (Slider *slider)
+{
+    DBG ("Slider drag ended");
+    audioProcessor.setSliderDrag(false);
+    
+    if (slider == &slFMin)
+        cqtVisualizer.reallocateImage();
 }
 
 
-void CqtanalyzerAudioProcessorEditor::generateScale(int numLabels, float fMin)
+void CqtanalyzerAudioProcessorEditor::generateScale (const float nOctaves, const float nBPerOct, const float fMin)
 {
     lbFreq.clear();
     scItems.clear();
+    
+    const float fMax = jmin (samplerate / 2 / exp2 (1.0/nBPerOct), fMin * pow (2, nOctaves));
+    const int numLabels = roundToInt (std::floor (std::log2 (fMax / fMin))) + 1;
     
     for (int ii = 0; ii < numLabels; ++ii)
     {

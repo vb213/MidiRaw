@@ -55,7 +55,10 @@ public:
 
     void timerCallback() override;
     void sliderValueChanged (Slider *slider) override;
-
+    void sliderDragStarted(Slider *slider) override;
+    void sliderDragEnded(Slider *slider) override;
+    
+    CQTVisualizer& getVisualizerComponent () { return cqtVisualizer; }
 private:
     // ====================== begin essentials ==================
     // lookAndFeel class with the IEM plug-in suite design
@@ -64,7 +67,7 @@ private:
     // stored references to the AudioProcessor and ValueTreeState holding all the parameters
     CqtanalyzerAudioProcessor& audioProcessor;
     AudioProcessorValueTreeState& valueTreeState;
-    void generateScale(int numLabels, float fMin);
+    void generateScale(const float nOctaves, const float nBPerOct, const float fMin);
 
 
     /* title and footer component
@@ -74,7 +77,7 @@ private:
         - AmbisonicIOWidget<maxOrder>
         - DirectivitiyIOWidget
      */
-    TitleBar<NoIOWidget, NoIOWidget> title;
+    TitleBar<AudioChannelsIOWidget<2, false>, NoIOWidget> title;
     OSCFooter footer;
     // =============== end essentials ============
 
@@ -82,14 +85,17 @@ private:
     // and the associated parameters
     CQTVisualizer cqtVisualizer;
     
+    double samplerate;
+    
     GroupComponent gcTuning;
     
-    Slider slFMin, slNOctaves, slBPerOct, slGamma, slGain, slTuning;
-    std::unique_ptr<SliderAttachment> slFMinAttachment, slNOctavesAttachment, slBPerOctAttachment, slGammaAttachment, slGainAttachment, slTuningAttachment;
+    Slider slFMin, slNOctaves, slBPerOct, slGamma, slGain, slTuning, slDynamicRange, slDBScale, slTunerStatus;
+    
+    std::unique_ptr<SliderAttachment> slFMinAttachment, slNOctavesAttachment, slBPerOctAttachment, slGammaAttachment, slGainAttachment, slTuningAttachment, slDynamicRangeAttachment, slDBScaleAttachment, slTunerStatusAttachment;
     
     Label lbDetuning;
     
-    SimpleLabel lbFMin, lbNOctaves, lbBPerOct, lbGamma, lbGain, lbTuning;
+    SimpleLabel lbFMin, lbNOctaves, lbBPerOct, lbGamma, lbGain, lbTuning, lbDynamicRange;
     OwnedArray<SimpleLabel> lbFreq;
     
     Rectangle<int> freqIdxArea;
@@ -101,8 +107,11 @@ private:
     const int freqScaleWidth = 30;
     const int freqScaleHeight = 10;
     
+    const float gammaTh = 10.0f;
+    
     FlexBox flexboxScale;
     Array<FlexItem> scItems;
+
 
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (CqtanalyzerAudioProcessorEditor)
