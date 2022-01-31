@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<JUCERPROJECT id="mbpAgi" name="CQTAnalyzer" displaySplashScreen="0" reportAppUsage="0"
-              splashScreenColour="Dark" projectType="audioplug" version="0.4.3"
+<JUCERPROJECT id="mbpAgi" name="CQTAnalyzer" displaySplashScreen="1" reportAppUsage="0"
+              splashScreenColour="Dark" projectType="audioplug" version="0.4.4"
               bundleIdentifier="at.iem.CQTAnalyzer" includeBinaryInAppConfig="1"
               cppLanguageStandard="14" buildVST="0" buildVST3="1" buildAU="0"
               buildAUv3="0" buildRTAS="0" buildAAX="0" buildStandalone="1"
@@ -10,10 +10,11 @@
               pluginChannelConfigs="" pluginIsSynth="0" pluginWantsMidiIn="0"
               pluginProducesMidiOut="0" pluginIsMidiEffectPlugin="0" pluginEditorRequiresKeys="0"
               pluginAUExportPrefix="CQTAnalyzerAU" aaxIdentifier="at.iem.CQTAnalyzer"
-              pluginAAXCategory="0,2" jucerVersion="5.4.7" companyCopyright="IEM - Felix Holzm&#252;ller"
+              pluginAAXCategory="0,2" companyCopyright="IEM - Felix Holzm&#252;ller"
               companyName="IEM" companyWebsite="iem.at" headerPath="../../../resources/"
               pluginFormats="buildStandalone,buildVST3" defines="JUCE_USE_CUSTOM_PLUGIN_STANDALONE_APP=1&#10;JUCE_VST3_CAN_REPLACE_VST2=0"
-              projectLineFeed="&#10;" pluginVST3Category="Analyzer" pluginVSTCategory="kPlugCategAnalysis">
+              projectLineFeed="&#10;" pluginVST3Category="Analyzer" pluginVSTCategory="kPlugCategAnalysis"
+              jucerFormatVersion="1">
   <MAINGROUP id="LpzrV9" name="CQTAnalyzer">
     <GROUP id="{DD24AA7B-644A-3C5E-9734-243C087817B2}" name="Standalone">
       <FILE id="Nl2txN" name="IEM_AudioDeviceSelectorComponent.cpp" compile="1"
@@ -76,11 +77,11 @@
         <CONFIGURATION name="Debug" isDebug="1" optimisation="1" targetName="CQTAnalyzer"
                        enablePluginBinaryCopyStep="1" vstBinaryLocation="$(HOME)/Library/Audio/Plug-Ins/VST/IEM/"
                        vst3BinaryLocation="$(HOME)/Library/Audio/Plug-Ins/VST3/IEM/"
-                       headerPath="/usr/local/include"/>
+                       headerPath="/usr/local/include" defines="DONT_BUILD_WITH_JACK_SUPPORT=1"/>
         <CONFIGURATION name="Release" isDebug="0" optimisation="3" targetName="CQTAnalyzer"
                        enablePluginBinaryCopyStep="1" vstBinaryLocation="$(HOME)/Library/Audio/Plug-Ins/VST/IEM/"
                        osxCompatibility="10.9 SDK" vst3BinaryLocation="$(HOME)/Library/Audio/Plug-Ins/VST3/IEM/"
-                       headerPath="/usr/local/include"/>
+                       headerPath="/usr/local/include" defines="DONT_BUILD_WITH_JACK_SUPPORT=1"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
         <MODULEPATH id="juce_core" path="../../../../../Applications/JUCE/modules"/>
@@ -103,9 +104,9 @@
     <LINUX_MAKE targetFolder="Builds/LinuxMakefile" smallIcon="SZT7j9" bigIcon="SZT7j9">
       <CONFIGURATIONS>
         <CONFIGURATION name="Debug" isDebug="1" optimisation="1" targetName="PluginTemplate"
-                       headerPath="/usr/local/include"/>
+                       headerPath="/usr/local/include" defines="DONT_BUILD_WITH_JACK_SUPPORT=1"/>
         <CONFIGURATION name="Release" isDebug="0" optimisation="3" targetName="PluginTemplate"
-                       headerPath="/usr/local/include"/>
+                       headerPath="/usr/local/include" defines="DONT_BUILD_WITH_JACK_SUPPORT=1"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
         <MODULEPATH id="juce_core" path="../../../../../Applications/JUCE/modules"/>
@@ -128,9 +129,9 @@
     <VS2019 targetFolder="Builds/VisualStudio2019" smallIcon="SZT7j9" bigIcon="SZT7j9">
       <CONFIGURATIONS>
         <CONFIGURATION isDebug="1" name="Debug" targetName="CQTAnalyzer" enablePluginBinaryCopyStep="1"
-                       vst3BinaryLocation="C:\Program Files\Common Files\VST3"/>
+                       vst3BinaryLocation="C:\Program Files\Common Files\VST3" defines="DONT_BUILD_WITH_JACK_SUPPORT=1"/>
         <CONFIGURATION isDebug="0" name="Release" targetName="CQTAnalyzer" enablePluginBinaryCopyStep="1"
-                       vst3BinaryLocation="C:\Program Files\Common Files\VST3"/>
+                       vst3BinaryLocation="C:\Program Files\Common Files\VST3" defines="DONT_BUILD_WITH_JACK_SUPPORT=1"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
         <MODULEPATH id="juce_osc"/>
