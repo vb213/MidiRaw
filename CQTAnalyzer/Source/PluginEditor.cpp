@@ -26,7 +26,7 @@
 
 //==============================================================================
 CqtanalyzerAudioProcessorEditor::CqtanalyzerAudioProcessorEditor (CqtanalyzerAudioProcessor& p, AudioProcessorValueTreeState& vts)
-: AudioProcessorEditor (&p), audioProcessor (p), valueTreeState (vts), footer (p.getOSCParameterInterface()), cqtVisualizer (audioProcessor.getCQT(), vts)
+: AudioProcessorEditor (&p), audioProcessor (p), valueTreeState (vts), cqtVisualizer (audioProcessor.getCQT(), vts)
 {
     // ============== BEGIN: essentials ======================
     // set GUI size and lookAndFeel
@@ -40,7 +40,7 @@ CqtanalyzerAudioProcessorEditor::CqtanalyzerAudioProcessorEditor (CqtanalyzerAud
     addAndMakeVisible (&title);
     title.setTitle (String ("CQT"), String ("Analyzer"));
     title.setFont (globalLaF.robotoBold, globalLaF.robotoLight);
-    addAndMakeVisible (&footer);
+//    addAndMakeVisible (&footer);
     // ============= END: essentials ========================
 
 
@@ -174,11 +174,11 @@ void CqtanalyzerAudioProcessorEditor::resized()
     // ============ BEGIN: header and footer ============
     const int leftRightMargin = 30;
     const int headerHeight = 60;
-    const int footerHeight = 25;
+//    const int footerHeight = 25;
     Rectangle<int> area (getLocalBounds());
 
-    Rectangle<int> footerArea (area.removeFromBottom (footerHeight));
-    footer.setBounds (footerArea);
+//    Rectangle<int> footerArea (area.removeFromBottom (footerHeight));
+//    footer.setBounds (footerArea);
 
     area.removeFromLeft (leftRightMargin);
     area.removeFromRight (leftRightMargin);
