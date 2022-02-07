@@ -19,7 +19,6 @@ You might need to restart your DAW before being able to use the plug-ins.
 All you need for compiling the Plug-in is the [JUCE framework](https://juce.com) with version 5.4.7 and an IDE (eg. Xcode, Microsoft Visual Studio).
 
 - Clone/download the repository
-- Install and add the fftw3 library (not necessary for macOS)
 - Open the .jucer-file with the Projucer (part of JUCE)
 - Set your global paths within the Projucer
 - If necessary: add additional exporters for your IDE
@@ -28,7 +27,7 @@ All you need for compiling the Plug-in is the [JUCE framework](https://juce.com)
 - Build
 - Enjoy ;-)
 
-The *.jucer project is configured to build VST2, VST3 and standalone versions. In order to build the VST2 versions of the plug-ins, you need to have a copy of the Steinberg VST2-SDK which no longer comes with JUCE.
+The *.jucer project is configured to build VST3 and standalone versions. In order to build the VST2 versions of the plug-ins, you need to have a copy of the Steinberg VST2-SDK which no longer comes with JUCE.
 
 ###  JACK support
 Both on macOS and linux, the plug-in standalone version will be built with JACK support. You can disable the JACK support by adding `DONT_BUILD_WITH_JACK_SUPPORT=1` to the *Preprocessor Definitions*-field in the Projucer projects.
