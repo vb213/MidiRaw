@@ -16,7 +16,7 @@ You can also move the VST-plug-in to your VST plug-in folder. That folder is usu
 You might need to restart your DAW before being able to use the plug-ins.
 
 ## Compilation Guide
-All you need for compiling the Plug-in is the [JUCE framework](https://juce.com) with version 5.4.7 and an IDE (eg. Xcode, Microsoft Visual Studio).
+All you need for compiling the Plug-in is the [JUCE framework](https://juce.com) with version 6.0.7 and an IDE (eg. Xcode, Microsoft Visual Studio).
 
 - Clone/download the repository
 - Open the .jucer-file with the Projucer (part of JUCE)
