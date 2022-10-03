@@ -110,10 +110,15 @@ set(SourceFiles
     Source/PluginProcessor.h
     Source/PluginEditor.cpp
     Source/PluginProcessor.cpp
+
     Source/CQTVisualizer.h
     Source/CQTVisualizer.cpp
     Source/CQTThread.h
     Source/CQTThread.cpp
+
+    Source/Utilities/BufferQueue.h
+    Source/Utilities/OverlappingSampleCollector.h
+    Source/Utilities/Parula.h
     
     resources/OSC/OSCInputStream.h
     resources/OSC/OSCParameterInterface.cpp
