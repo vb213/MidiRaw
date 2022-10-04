@@ -110,7 +110,7 @@ private:
     const int bufferSize;
     const int overlap;
 
-    Atomic<int> skippedSamples;
+    juce::Atomic<int> skippedSamples;
 
     size_t numCollected;
 

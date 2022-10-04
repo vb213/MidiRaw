@@ -22,14 +22,14 @@
 
 #pragma once
 
-#include "../JuceLibraryCode/JuceHeader.h"
-#include "../../resources/AudioProcessorBase.h"
+#include "JuceHeader.h"
+#include "../resources/AudioProcessorBase.h"
 #include "CQTThread.h"
 
 #define ProcessorClass CqtanalyzerAudioProcessor
 
 //==============================================================================
-class CqtanalyzerAudioProcessor  :  public AudioProcessorBase<IOTypes::AudioChannels<2>, IOTypes::AudioChannels<2>>, private Timer
+class CqtanalyzerAudioProcessor  :  public AudioProcessorBase<IOTypes::AudioChannels<2>, IOTypes::AudioChannels<2>>, private juce::Timer
 {
 public:
     constexpr static int numberOfInputChannels = 2;
@@ -46,10 +46,10 @@ public:
      bool isBusesLayoutSupported (const BusesLayout& layouts) const override;
     #endif
 
-    void processBlock (AudioBuffer<float>&, MidiBuffer&) override;
+    void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
 
     //==============================================================================
-    AudioProcessorEditor* createEditor() override;
+    juce::AudioProcessorEditor* createEditor() override;
     bool hasEditor() const override;
 
 
@@ -57,15 +57,15 @@ public:
     int getNumPrograms() override;
     int getCurrentProgram() override;
     void setCurrentProgram (int index) override;
-    const String getProgramName (int index) override;
-    void changeProgramName (int index, const String& newName) override;
+    const juce::String getProgramName (int index) override;
+    void changeProgramName (int index, const juce::String& newName) override;
 
     //==============================================================================
-    void getStateInformation (MemoryBlock& destData) override;
+    void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
     //==============================================================================
-    void parameterChanged (const String &parameterID, float newValue) override;
+    void parameterChanged (const juce::String &parameterID, float newValue) override;
     void updateBuffers() override; // use this to implement a buffer update method
     void timerCallback() override;
 
@@ -74,7 +74,7 @@ public:
     void setSliderDrag ( bool newStatus ) { sliderDrag = newStatus; }
     
     //======= Parameters ===========================================================
-    std::vector<std::unique_ptr<RangedAudioParameter>> createParameterLayout();
+    std::vector<std::unique_ptr<juce::RangedAudioParameter>> createParameterLayout();
     //==============================================================================
 
 
@@ -95,7 +95,7 @@ private:
     bool sliderDrag = false;
 
     
-    AudioBuffer<float> copyBuffer;
+    juce::AudioBuffer<float> copyBuffer;
     
     CQTThread::Ptr cqt;
     

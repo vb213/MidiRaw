@@ -23,7 +23,7 @@ along with this software.  If not, see <https://www.gnu.org/licenses/>.
 #include "CQTVisualizer.h"
 #include "Utilities/Parula.h"
 
-CQTVisualizer::CQTVisualizer (CQTThread::Ptr& cqtThread, AudioProcessorValueTreeState& vts) : cqt (cqtThread)
+CQTVisualizer::CQTVisualizer (CQTThread::Ptr& cqtThread, juce::AudioProcessorValueTreeState& vts) : cqt (cqtThread)
 {
     
     dBScale = bool (*vts.getRawParameterValue ("dBScale"));
@@ -32,7 +32,7 @@ CQTVisualizer::CQTVisualizer (CQTThread::Ptr& cqtThread, AudioProcessorValueTree
     startTimer (20);
 }
 
-void CQTVisualizer::paint (Graphics& g)
+void CQTVisualizer::paint (juce::Graphics& g)
 {
     updateData();
 
@@ -64,7 +64,7 @@ void CQTVisualizer::reallocateImage()
 
 void CQTVisualizer::reallocateImage (const int imageHeight)
 {
-    image = Image (Image::RGB, imageWidth, imageHeight, true);
+    image = juce::Image (juce::Image::RGB, imageWidth, imageHeight, true);
     DBG("IS THIS IMAGE REALLOCATION");
     imageOffset = 0;
     poppedData.resize (imageHeight);
@@ -99,8 +99,8 @@ void CQTVisualizer::updateData()
                 {
                     val = 20*log10 (poppedData[h]) * kFactor + 127;
                 }
-                const int colourIndex = jlimit (0, 127, roundToInt (val));
-                const auto colour = Colour (parula[colourIndex][0], parula[colourIndex][1], parula[colourIndex][2]);
+                const int colourIndex = juce::jlimit (0, 127, juce::roundToInt (val));
+                const auto colour = juce::Colour (parula[colourIndex][0], parula[colourIndex][1], parula[colourIndex][2]);
                 image.setPixelAt (imageOffset, h, colour);
             }
 

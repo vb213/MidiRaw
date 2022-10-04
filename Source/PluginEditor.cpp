@@ -25,7 +25,7 @@
 
 
 //==============================================================================
-CqtanalyzerAudioProcessorEditor::CqtanalyzerAudioProcessorEditor (CqtanalyzerAudioProcessor& p, AudioProcessorValueTreeState& vts)
+CqtanalyzerAudioProcessorEditor::CqtanalyzerAudioProcessorEditor (CqtanalyzerAudioProcessor& p, juce::AudioProcessorValueTreeState& vts)
 : AudioProcessorEditor (&p), audioProcessor (p), valueTreeState (vts), footer (p.getOSCParameterInterface()), cqtVisualizer (audioProcessor.getCQT(), vts)
 {
     // ============== BEGIN: essentials ======================
@@ -38,7 +38,7 @@ CqtanalyzerAudioProcessorEditor::CqtanalyzerAudioProcessorEditor (CqtanalyzerAud
 
     // make title and footer visible, and set the PluginName
     addAndMakeVisible (&title);
-    title.setTitle (String ("CQT"), String ("Analyzer"));
+    title.setTitle (juce::String ("CQT"), juce::String ("Analyzer"));
     title.setFont (globalLaF.robotoBold, globalLaF.robotoLight);
     addAndMakeVisible (&footer);
     // ============= END: essentials ========================
@@ -51,102 +51,102 @@ CqtanalyzerAudioProcessorEditor::CqtanalyzerAudioProcessorEditor (CqtanalyzerAud
     
     // Sliders
     addAndMakeVisible (slFMin);
-    slFMin.setSliderStyle (Slider::RotaryHorizontalVerticalDrag);
-    slFMin.setTextBoxStyle (Slider::TextBoxBelow, false, 70, 20);
-    slFMin.setColour (Slider::rotarySliderOutlineColourId, globalLaF.ClWidgetColours[0]);
+    slFMin.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
+    slFMin.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 20);
+    slFMin.setColour (juce::Slider::rotarySliderOutlineColourId, globalLaF.ClWidgetColours[0]);
     slFMin.setTextValueSuffix (" Hz");
     slFMinAttachment.reset (new SliderAttachment (valueTreeState, "fMin", slFMin));
     slFMin.addListener (this);
     
     addAndMakeVisible (slNOctaves);
-    slNOctaves.setSliderStyle (Slider::RotaryHorizontalVerticalDrag);
-    slNOctaves.setTextBoxStyle (Slider::TextBoxBelow, false, 70, 20);
-    slNOctaves.setColour (Slider::rotarySliderOutlineColourId, globalLaF.ClWidgetColours[1]);
+    slNOctaves.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
+    slNOctaves.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 20);
+    slNOctaves.setColour (juce::Slider::rotarySliderOutlineColourId, globalLaF.ClWidgetColours[1]);
     slNOctavesAttachment.reset (new SliderAttachment (valueTreeState, "nOctaves", slNOctaves));
     slNOctaves.addListener (this);
     
     addAndMakeVisible (slBPerOct);
-    slBPerOct.setSliderStyle (Slider::RotaryHorizontalVerticalDrag);
-    slBPerOct.setTextBoxStyle (Slider::TextBoxBelow, false, 70, 20);
-    slBPerOct.setColour (Slider::rotarySliderOutlineColourId, globalLaF.ClWidgetColours[1]);
+    slBPerOct.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
+    slBPerOct.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 20);
+    slBPerOct.setColour (juce::Slider::rotarySliderOutlineColourId, globalLaF.ClWidgetColours[1]);
     slBPerOctAttachment.reset (new SliderAttachment (valueTreeState, "bPerOct", slBPerOct));
     slBPerOct.addListener (this);
     
     addAndMakeVisible (slGamma);
-    slGamma.setSliderStyle (Slider::RotaryHorizontalVerticalDrag);
-    slGamma.setTextBoxStyle (Slider::TextBoxBelow, false, 70, 20);
-    slGamma.setColour (Slider::rotarySliderOutlineColourId, globalLaF.ClWidgetColours[2]);
+    slGamma.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
+    slGamma.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 20);
+    slGamma.setColour (juce::Slider::rotarySliderOutlineColourId, globalLaF.ClWidgetColours[2]);
     slGammaAttachment.reset (new SliderAttachment (valueTreeState, "gamma", slGamma));
     slGamma.addListener (this);
     
     addAndMakeVisible (slGain);
-    slGain.setSliderStyle (Slider::RotaryHorizontalVerticalDrag);
-    slGain.setTextBoxStyle (Slider::TextBoxBelow, false, 70, 20);
-    slGain.setColour (Slider::thumbColourId, globalLaF.ClWidgetColours[3]);
+    slGain.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
+    slGain.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 20);
+    slGain.setColour (juce::Slider::thumbColourId, globalLaF.ClWidgetColours[3]);
     slGainAttachment.reset (new SliderAttachment (valueTreeState, "gain", slGain));
     slGain.setTextValueSuffix (" dB");
     
     addChildComponent (slTuning);
-    slTuning.setSliderStyle (Slider::IncDecButtons);
-    slTuning.setTextBoxStyle (Slider::TextBoxBelow, false, 70, 20);
-    slTuning.setColour (Slider::thumbColourId, Colours::grey);
+    slTuning.setSliderStyle (juce::Slider::IncDecButtons);
+    slTuning.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 20);
+    slTuning.setColour (juce::Slider::thumbColourId, juce::Colours::grey);
     slTuningAttachment.reset (new SliderAttachment (valueTreeState, "tuningFreq", slTuning));
     slTuning.setTextValueSuffix (" Hz");
     
     addAndMakeVisible (slDBScale);
-    slDBScale.setSliderStyle (Slider::LinearHorizontal);
-    slDBScale.setTextBoxStyle (Slider::TextBoxBelow, false, 70, 20);
-    slDBScale.setColour (Slider::thumbColourId, Colours::grey);
+    slDBScale.setSliderStyle (juce::Slider::LinearHorizontal);
+    slDBScale.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 20);
+    slDBScale.setColour (juce::Slider::thumbColourId, juce::Colours::grey);
     slDBScaleAttachment.reset (new SliderAttachment (valueTreeState, "dBScale", slDBScale));
     slDBScale.addListener (this);
     
     addChildComponent (slDynamicRange);
-    slDynamicRange.setSliderStyle (Slider::RotaryHorizontalVerticalDrag);
-    slDynamicRange.setTextBoxStyle (Slider::TextBoxBelow, true, 70, 20);
-    slDynamicRange.setColour (Slider::thumbColourId, globalLaF.ClWidgetColours[3]);
+    slDynamicRange.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
+    slDynamicRange.setTextBoxStyle (juce::Slider::TextBoxBelow, true, 70, 20);
+    slDynamicRange.setColour (juce::Slider::thumbColourId, globalLaF.ClWidgetColours[3]);
     slDynamicRangeAttachment.reset (new SliderAttachment (valueTreeState, "dynamicRange", slDynamicRange));
     slDynamicRange.setTextValueSuffix (" dB");
     slDynamicRange.addListener (this);
     
     addAndMakeVisible (slTunerStatus);
-    slTunerStatus.setSliderStyle (Slider::LinearHorizontal);
-    slTunerStatus.setTextBoxStyle (Slider::TextBoxBelow, false, 70, 20);
-    slTunerStatus.setColour (Slider::thumbColourId, Colours::grey);
+    slTunerStatus.setSliderStyle (juce::Slider::LinearHorizontal);
+    slTunerStatus.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 20);
+    slTunerStatus.setColour (juce::Slider::thumbColourId, juce::Colours::grey);
     slTunerStatusAttachment.reset (new SliderAttachment (valueTreeState, "tunerStatus", slTunerStatus));
     slTunerStatus.addListener (this);
     
     
     // Labels
     addChildComponent (lbDetuning);
-    lbDetuning.setJustificationType (Justification::centred);
+    lbDetuning.setJustificationType (juce::Justification::centred);
     
     addAndMakeVisible (lbFMin);
-    lbFMin.setJustification (Justification::centred);
-    lbFMin.setText ("fMin", dontSendNotification);
+    lbFMin.setJustification (juce::Justification::centred);
+    lbFMin.setText ("fMin", juce::dontSendNotification);
     
     addAndMakeVisible (lbNOctaves);
-    lbNOctaves.setJustification (Justification::centred);
-    lbNOctaves.setText ("Octaves", dontSendNotification);
+    lbNOctaves.setJustification (juce::Justification::centred);
+    lbNOctaves.setText ("Octaves", juce::dontSendNotification);
     
     addAndMakeVisible (lbBPerOct);
-    lbBPerOct.setJustification (Justification::centred);
-    lbBPerOct.setText ("Bins per Oct", dontSendNotification);
+    lbBPerOct.setJustification (juce::Justification::centred);
+    lbBPerOct.setText ("Bins per Oct", juce::dontSendNotification);
     
     addAndMakeVisible (lbGamma);
-    lbGamma.setJustification (Justification::centred);
-    lbGamma.setText ("Gamma", dontSendNotification);
+    lbGamma.setJustification (juce::Justification::centred);
+    lbGamma.setText ("Gamma", juce::dontSendNotification);
     
     addAndMakeVisible (lbGain);
-    lbGain.setJustification (Justification::centred);
-    lbGain.setText ("Gain", dontSendNotification);
+    lbGain.setJustification (juce::Justification::centred);
+    lbGain.setText ("Gain", juce::dontSendNotification);
     
     addChildComponent (lbTuning);
-    lbTuning.setJustification (Justification::centred);
-    lbTuning.setText ("", dontSendNotification);
+    lbTuning.setJustification (juce::Justification::centred);
+    lbTuning.setText ("", juce::dontSendNotification);
     
     addChildComponent (lbDynamicRange);
-    lbDynamicRange.setJustification (Justification::centred);
-    lbDynamicRange.setText ("Range", dontSendNotification);
+    lbDynamicRange.setJustification (juce::Justification::centred);
+    lbDynamicRange.setText ("Range", juce::dontSendNotification);
     
     // This is needed for correct scale when reopening UI
     generateScale (slNOctaves.getValue(), slBPerOct.getValue(), slFMin.getValue());
@@ -164,7 +164,7 @@ CqtanalyzerAudioProcessorEditor::~CqtanalyzerAudioProcessorEditor()
 }
 
 //==============================================================================
-void CqtanalyzerAudioProcessorEditor::paint (Graphics& g)
+void CqtanalyzerAudioProcessorEditor::paint (juce::Graphics& g)
 {
     g.fillAll (globalLaF.ClBackground);
 }
@@ -175,47 +175,47 @@ void CqtanalyzerAudioProcessorEditor::resized()
     const int leftRightMargin = 30;
     const int headerHeight = 60;
     const int footerHeight = 25;
-    Rectangle<int> area (getLocalBounds());
+    juce::Rectangle<int> area (getLocalBounds());
 
-    Rectangle<int> footerArea (area.removeFromBottom (footerHeight));
+    juce::Rectangle<int> footerArea (area.removeFromBottom (footerHeight));
     footer.setBounds (footerArea);
 
     area.removeFromLeft (leftRightMargin);
     area.removeFromRight (leftRightMargin);
-    Rectangle<int> headerArea = area.removeFromTop (headerHeight);
+    juce::Rectangle<int> headerArea = area.removeFromTop (headerHeight);
     title.setBounds (headerArea);
     area.removeFromTop (10);
     area.removeFromBottom (5);
     // =========== END: header and footer =================
-    Rectangle<int> gcArea (sliderSize, 2 * sliderSize);
+    juce::Rectangle<int> gcArea (sliderSize, 2 * sliderSize);
     gcTuning.setBounds (gcArea);
     
     // Sorting all Silders, Labels and Tuner-GroupComponent in flexboxes for responsive design
-    FlexBox flexboxUI;
+    juce::FlexBox flexboxUI;
     
-    Array<FlexItem> uiItems;
-    Array<FlexItem> lbItems;
+    juce::Array<juce::FlexItem> uiItems;
+    juce::Array<juce::FlexItem> lbItems;
     
-    flexboxUI.flexDirection = FlexBox::Direction::row;
-    flexboxUI.flexWrap = FlexBox::Wrap::noWrap;
-    flexboxUI.alignContent = FlexBox::AlignContent::flexEnd;
-    flexboxUI.justifyContent = FlexBox::JustifyContent::spaceBetween;
-    flexboxUI.alignItems = FlexBox::AlignItems::flexEnd;
+    flexboxUI.flexDirection = juce::FlexBox::Direction::row;
+    flexboxUI.flexWrap = juce::FlexBox::Wrap::noWrap;
+    flexboxUI.alignContent = juce::FlexBox::AlignContent::flexEnd;
+    flexboxUI.justifyContent = juce::FlexBox::JustifyContent::spaceBetween;
+    flexboxUI.alignItems = juce::FlexBox::AlignItems::flexEnd;
     
-    FlexBox flexboxLb = flexboxUI;
+    juce::FlexBox flexboxLb = flexboxUI;
     
-    uiItems.add (FlexItem (sliderSize, sliderSize, slFMin));
-    uiItems.add (FlexItem (sliderSize, sliderSize, slNOctaves));
-    uiItems.add (FlexItem (sliderSize, sliderSize, slBPerOct));
-    uiItems.add (FlexItem (sliderSize, sliderSize, slGamma));
-    uiItems.add (FlexItem (2 * sliderSize, sliderSize, gcTuning));
+    uiItems.add (juce::FlexItem (sliderSize, sliderSize, slFMin));
+    uiItems.add (juce::FlexItem (sliderSize, sliderSize, slNOctaves));
+    uiItems.add (juce::FlexItem (sliderSize, sliderSize, slBPerOct));
+    uiItems.add (juce::FlexItem (sliderSize, sliderSize, slGamma));
+    uiItems.add (juce::FlexItem (2 * sliderSize, sliderSize, gcTuning));
     flexboxUI.items = uiItems;
     
-    lbItems.add (FlexItem (sliderSize, labelOffset, lbFMin));
-    lbItems.add (FlexItem (sliderSize, labelOffset, lbNOctaves));
-    lbItems.add (FlexItem (sliderSize, labelOffset, lbBPerOct));
-    lbItems.add (FlexItem (sliderSize, labelOffset, lbGamma));
-    lbItems.add (FlexItem (2 * sliderSize, labelOffset, lbTuning));
+    lbItems.add (juce::FlexItem (sliderSize, labelOffset, lbFMin));
+    lbItems.add (juce::FlexItem (sliderSize, labelOffset, lbNOctaves));
+    lbItems.add (juce::FlexItem (sliderSize, labelOffset, lbBPerOct));
+    lbItems.add (juce::FlexItem (sliderSize, labelOffset, lbGamma));
+    lbItems.add (juce::FlexItem (2 * sliderSize, labelOffset, lbTuning));
     flexboxLb.items = lbItems;
 
     flexboxLb.performLayout (area);
@@ -226,7 +226,7 @@ void CqtanalyzerAudioProcessorEditor::resized()
     area.removeFromBottom (sliderSize + labelOffset + 5);
 
     // UI control
-    Rectangle<int> GainArea = area.removeFromRight (sliderSize * 0.7f);
+    juce::Rectangle<int> GainArea = area.removeFromRight (sliderSize * 0.7f);
     slDBScale.setBounds(GainArea.removeFromTop(40));
     
     lbGain.setBounds (GainArea.removeFromBottom (labelOffset + 5));
@@ -240,11 +240,11 @@ void CqtanalyzerAudioProcessorEditor::resized()
     
     
     // Labels for frequency scale
-    flexboxScale.flexDirection = FlexBox::Direction::columnReverse;
-    flexboxScale.flexWrap = FlexBox::Wrap::noWrap;
-    flexboxScale.alignContent = FlexBox::AlignContent::flexEnd;
-    flexboxScale.justifyContent = FlexBox::JustifyContent::spaceBetween;
-    flexboxScale.alignItems = FlexBox::AlignItems::flexEnd;
+    flexboxScale.flexDirection = juce::FlexBox::Direction::columnReverse;
+    flexboxScale.flexWrap = juce::FlexBox::Wrap::noWrap;
+    flexboxScale.alignContent = juce::FlexBox::AlignContent::flexEnd;
+    flexboxScale.justifyContent = juce::FlexBox::JustifyContent::spaceBetween;
+    flexboxScale.alignItems = juce::FlexBox::AlignItems::flexEnd;
 
     freqIdxArea = area.removeFromRight(freqScaleWidth);
     
@@ -284,7 +284,7 @@ void CqtanalyzerAudioProcessorEditor::timerCallback()
         detuningString = s.str();
         
     
-        lbDetuning.setText (detuningString, dontSendNotification);
+        lbDetuning.setText (detuningString, juce::dontSendNotification);
     }
     
     // Components for tuning are defined here for bigger height
@@ -330,7 +330,7 @@ void CqtanalyzerAudioProcessorEditor::timerCallback()
 }
 
 
-void CqtanalyzerAudioProcessorEditor::sliderValueChanged (Slider *slider)
+void CqtanalyzerAudioProcessorEditor::sliderValueChanged (juce::Slider *slider)
 {
     if (slider == &slDynamicRange)
         cqtVisualizer.setDynamicRange ((float) slider->getValue());
@@ -341,13 +341,13 @@ void CqtanalyzerAudioProcessorEditor::sliderValueChanged (Slider *slider)
         generateScale (slNOctaves.getValue(), slBPerOct.getValue(), slFMin.getValue());
 }
 
-void CqtanalyzerAudioProcessorEditor::sliderDragStarted (Slider *slider)
+void CqtanalyzerAudioProcessorEditor::sliderDragStarted (juce::Slider *slider)
 {
     DBG ("Slider drag started");
     audioProcessor.setSliderDrag(true);
 }
 
-void CqtanalyzerAudioProcessorEditor::sliderDragEnded (Slider *slider)
+void CqtanalyzerAudioProcessorEditor::sliderDragEnded (juce::Slider *slider)
 {
     DBG ("Slider drag ended");
     audioProcessor.setSliderDrag(false);
@@ -362,17 +362,17 @@ void CqtanalyzerAudioProcessorEditor::generateScale (const float nOctaves, const
     lbFreq.clear();
     scItems.clear();
     
-    const float fMax = jmin (samplerate / 2 / exp2 (1.0/nBPerOct), fMin * pow (2, nOctaves));
-    const int numLabels = roundToInt (std::floor (std::log2 (fMax / fMin))) + 1;
+    const float fMax = juce::jmin (samplerate / 2 / exp2 (1.0/nBPerOct), fMin * pow (2, nOctaves));
+    const int numLabels = juce::roundToInt (std::floor (std::log2 (fMax / fMin))) + 1;
     
     for (int ii = 0; ii < numLabels; ++ii)
     {
         std::string freq = std::to_string (int (round (fMin * pow (2, ii))));
         
         lbFreq.add (new SimpleLabel(freq));
-        lbFreq[ii]->setJustification (Justification::left);
+        lbFreq[ii]->setJustification (juce::Justification::left);
         addAndMakeVisible (lbFreq.getLast());
-        scItems.add (FlexItem (freqScaleWidth, freqScaleHeight, *lbFreq[ii]));
+        scItems.add (juce::FlexItem (freqScaleWidth, freqScaleHeight, *lbFreq[ii]));
     }
     flexboxScale.items = scItems;
     flexboxScale.performLayout (freqIdxArea);

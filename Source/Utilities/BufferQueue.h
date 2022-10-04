@@ -70,10 +70,10 @@ public:
         auto scopedWrite = fifo.write (1);
 
         jassert (numSamples <= bufferSize);
-        FloatVectorOperations::copy (buffers[scopedWrite.startIndex1].data(), dataToPush, jmin (bufferSize, numSamples));
+        juce::FloatVectorOperations::copy (buffers[scopedWrite.startIndex1].data(), dataToPush, juce::jmin (bufferSize, numSamples));
 
         if (numSamples < bufferSize)
-            FloatVectorOperations::clear (buffers[scopedWrite.startIndex1].data() + numSamples, bufferSize - numSamples);
+            juce::FloatVectorOperations::clear (buffers[scopedWrite.startIndex1].data() + numSamples, bufferSize - numSamples);
 
         return true;
     }
@@ -86,13 +86,13 @@ public:
 
         auto scopedRead = fifo.read (1);
 
-        FloatVectorOperations::copy (outputBuffer, buffers[scopedRead.startIndex1].data(), bufferSize);
+        juce::FloatVectorOperations::copy (outputBuffer, buffers[scopedRead.startIndex1].data(), bufferSize);
 
         return true;
     }
 
 private:
-    AbstractFifo fifo;
+    juce::AbstractFifo fifo;
     std::vector<std::vector<SampleType>> buffers;
     const int bufferSize;
 };

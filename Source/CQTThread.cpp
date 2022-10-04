@@ -35,9 +35,9 @@ CQTThread::Params::Params (const double fs, const float fMin, const float nOctav
     
     const auto m = exp2 (1.0 / B);
 
-    const float fMax = jmin (fs / 2 / m, fMin * pow (2, nOctaves));
+    const float fMax = juce::jmin (fs / 2 / m, fMin * pow (2, nOctaves));
 
-    K = roundToInt (std::floor (std::log2 (fMax / fMin) * B));
+    K = juce::roundToInt (std::floor (std::log2 (fMax / fMin) * B));
     binsPerSemitone = int(B / 12.0);
     
 
@@ -71,13 +71,13 @@ CQTThread::Params::Params (const double fs, const float fMin, const float nOctav
     }
 
     
-    blockLength = nextPowerOfTwo (ceil (Nk_max));
+    blockLength = juce::nextPowerOfTwo (ceil (Nk_max));
     fftSize = (fftOversampling * blockLength);
     fftOrder = log2 (fftSize);
     
     df = fs / fftSize;
     
-    ifftSize = nextPowerOfTwo (bandwidth_max / df);
+    ifftSize = juce::nextPowerOfTwo (bandwidth_max / df);
     ifftOrder = log2 (ifftSize);
     
     float overlapFactor = 0.5;
@@ -171,7 +171,7 @@ void CQTThread::computeWindows()
         }
         
         // fft normalization
-        FloatVectorOperations::multiply (windows[k]->data(), 1.0f / params.fftSize, static_cast<int> (windows[k]->size()));
+        juce::FloatVectorOperations::multiply (windows[k]->data(), 1.0f / params.fftSize, static_cast<int> (windows[k]->size()));
     }
 
     DBG("Windows calculated");
@@ -201,7 +201,7 @@ void CQTThread::run()
             audioBufferFifo.pop (fftData.data());
  
             // Apply window in time domain for blockbased processing
-            FloatVectorOperations::multiply(fftData.data(), hannWindowForTimedomain.data(), params.blockLength);
+            juce::FloatVectorOperations::multiply(fftData.data(), hannWindowForTimedomain.data(), params.blockLength);
 
             // RFFT
             fft.performRealOnlyForwardTransform(fftData.data(), true);
@@ -350,7 +350,7 @@ void CQTThread::calculateTuning()
     detuningCents = 1200 * log2 (integratedTuning/params.tuning);
 
     // Modulo, so the solution is in the range of +- 100
-    detuningCents = float (roundToInt (detuningCents) % 100);
+    detuningCents = float (juce::roundToInt (detuningCents) % 100);
     
     // Limiting to +-50
     if (detuningCents > 50.0f)
