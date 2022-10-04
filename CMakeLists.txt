@@ -57,9 +57,6 @@ option(JUCE_ENABLE_MODULE_SOURCE_GROUPS "Show all module sources in IDE projects
 # Add git submodule of JUCE
 add_git_submodule(JUCE)
 
-# Add directory of JUCE
-add_subdirectory(JUCE)
-
 # Copy VST-Plugins into default directory
 set_directory_properties (PROPERTIES JUCE_COPY_PLUGIN_AFTER_BUILD ON)
 
@@ -104,6 +101,8 @@ juce_add_binary_data (LAF_fonts SOURCES
     resources/lookAndFeel/Roboto-Medium.ttf
     resources/lookAndFeel/Roboto-Regular.ttf)
 
+juce_generate_juce_header (CQTAnalyzer)
+
 # Manually list all .h and .cpp files for the plugin
 set(SourceFiles
     Source/PluginEditor.h
@@ -131,12 +130,13 @@ target_sources("${PROJECT_NAME}" PRIVATE ${SourceFiles})
 # No, we don't want our source buried in extra nested folders
 set_target_properties("${PROJECT_NAME}" PROPERTIES FOLDER "")
 
+#TODO Enable source tree view in XCode
 # The Xcode source tree should uhhh, still look like the source tree, yo
-source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/Source PREFIX "" FILES ${SourceFiles})
+# source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/Source PREFIX "" FILES ${SourceFiles})
 
 # Required for Linux happiness:
 # See https://forum.juce.com/t/loading-pytorch-model-using-binarydata/39997/2
-set_target_properties(Assets PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
+set_target_properties(LAF_fonts PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 
 # This cleans up the folder organization on Xcode.
 # It tucks the Plugin varieties into a "Targets" folder and generate an Xcode Scheme manually
@@ -158,7 +158,7 @@ foreach(target ${FORMATS} "All")
             XCODE_GENERATE_SCHEME ON)
     endif()
 endforeach()
-set_target_properties(Assets PROPERTIES FOLDER "Targets")
+set_target_properties(LAF_fonts PROPERTIES FOLDER "Targets")
 
 # We'll need to link to these from our plugin as well as our tests
 set(JUCE_DEPENDENCIES
