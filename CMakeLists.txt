@@ -112,30 +112,35 @@ set(SourceFiles
     Source/PluginProcessor.cpp
 
     Source/CQTVisualizer.h
-    Source/CQTVisualizer.cpp
     Source/CQTThread.h
+    Source/CQTVisualizer.cpp
     Source/CQTThread.cpp
 
     Source/Utilities/BufferQueue.h
     Source/Utilities/OverlappingSampleCollector.h
-    Source/Utilities/Parula.h
-    
-    resources/lookAndFeel/IEM_LaF.h
+    Source/Utilities/Parula.h)
+
+set(ResourceFiles    
     resources/OSC/OSCInputStream.h
     resources/OSC/OSCParameterInterface.cpp
     resources/OSC/OSCParameterInterface.h
     resources/OSC/OSCStatus.cpp
     resources/OSC/OSCStatus.h
-    resources/OSC/OSCUtilities.h
+    resources/OSC/OSCUtilities.h)
 
-    # Those last ones are only needed for standalone app support
-    # TODO: Include only if standalone is selected
-    resources/Standalone/StandaloneApp.cpp
-    resources/Standalone/MyStandaloneFilterWindow.h
-    resources/Standalone/IEM_JackAudio.h
-    resources/Standalone/IEM_AudioDeviceSelectorComponent.cpp
-    resources/Standalone/IEM_AudioDeviceSelectorComponent.h)
-target_sources("${PROJECT_NAME}" PRIVATE ${SourceFiles})
+target_sources("${PROJECT_NAME}" PRIVATE ${SourceFiles} ${ResourceFiles})
+
+# Those are only needed for standalone app support
+if(Standalone IN_LIST FORMATS)
+    set(StandaloneFiles
+        resources/Standalone/StandaloneApp.cpp
+        resources/Standalone/MyStandaloneFilterWindow.h
+        resources/Standalone/IEM_JackAudio.h
+        resources/Standalone/IEM_AudioDeviceSelectorComponent.cpp
+        resources/Standalone/IEM_AudioDeviceSelectorComponent.h)
+    target_sources("${PROJECT_NAME}" PRIVATE ${StandaloneFiles})
+    source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX "" FILES ${StandaloneFiles})
+endif()
 
 # TODO: Enable Jack Support
 target_compile_definitions("${PROJECT_NAME}" PUBLIC DONT_BUILD_WITH_JACK_SUPPORT=1)
@@ -143,9 +148,9 @@ target_compile_definitions("${PROJECT_NAME}" PUBLIC DONT_BUILD_WITH_JACK_SUPPORT
 # No, we don't want our source buried in extra nested folders
 set_target_properties("${PROJECT_NAME}" PROPERTIES FOLDER "")
 
-#TODO Enable source tree view in XCode
 # The Xcode source tree should uhhh, still look like the source tree, yo
-# source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/Source PREFIX "" FILES ${SourceFiles})
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/Source PREFIX "" FILES ${SourceFiles})
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX "" FILES ${ResourceFiles})
 
 # Required for Linux happiness:
 # See https://forum.juce.com/t/loading-pytorch-model-using-binarydata/39997/2
