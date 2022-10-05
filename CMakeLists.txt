@@ -28,23 +28,32 @@ endfunction(add_git_submodule)
 # This cannot have spaces (but PRODUCT_NAME can)
 set(PROJECT_NAME "CQTAnalyzer")
 
-# Set the plugin formats you'll be building here.
-# Valid formats: AAX Unity VST AU AUv3 Standalone
-set(FORMATS VST3 LV2 Standalone)
-
 # For simplicity, the name of the project is also the name of the target
 project(${PROJECT_NAME} 
         VERSION 0.4.5
         LANGUAGES CXX C
         HOMEPAGE_URL "https://iem.kug.ac.at/")
 
+# The following options let you select the plug-ins formats you want to build.
+# You can either change them here or use the command line to switch them on/off.
+option(IEM_BUILD_VST2 "Build VST2 version of the plug-ins." OFF)
+option(IEM_BUILD_VST3 "Build VST3 version of the plug-ins." ON)
+option(IEM_BUILD_AU "Build AU version of the plug-ins." OFF)
+option(IEM_BUILD_LV2 "Build LV2 version of the plug-ins." OFF)
+option(IEM_BUILD_STANDALONE "Build standalones of the plug-ins." ON)
+option(IEM_STANDALONE_JACK_SUPPORT "Build standalones with JACK support." OFF)
+option(IEM_MACOS_UNIVERSAL "Build universal versions for macOS for Intel and Apple Silicon." OFF)
+
 # By default we don't want Xcode schemes to be made for modules, etc
 set(CMAKE_XCODE_GENERATE_SCHEME OFF)
 
 # Enable to build universal binaries on macOS, increasing build time
 # This only affects local builds, GitHub actions always builds Universals
-# set(CMAKE_OSX_ARCHITECTURES arm64 x86_64)
-set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13" CACHE STRING "Support macOS down to High Sierra")
+if(IEM_MACOS_UNIVERSAL)
+    set(CMAKE_OSX_ARCHITECTURES arm64 x86_64)
+endif()
+
+set(CMAKE_OSX_DEPLOYMENT_TARGET "10.09" CACHE STRING "Support macOS down to High Sierra")
 
 # Adds all the module sources so they appear correctly in the IDE
 # Must be set before JUCE is added as a sub-dir (or any targets are made)
@@ -57,30 +66,65 @@ option(JUCE_ENABLE_MODULE_SOURCE_GROUPS "Show all module sources in IDE projects
 # Add git submodule of JUCE
 add_git_submodule(JUCE)
 
+# Set the plugin formats you'll be building.
+# Valid formats: AAX Unity VST AU AUv3 LV2 Standalone
+set(FORMATS "")
+
+if(IEM_BUILD_VST2)
+    message("-- IEM: Building VST2 versions")
+    list(APPEND FORMATS VST)
+    # checking VST2 SDK
+    if(DEFINED VST2SDKPATH)
+        juce_set_vst2_sdk_path (${VST2SDKPATH})
+    else()
+        message(FATAL_ERROR "You have to specify the VST2PATH variable with the path to the VST2 SDK if you want to build VST2 versions.")
+    endif()
+endif()
+
+if(IEM_BUILD_VST3)
+    message("-- IEM: Building VST3 versions")
+    list(APPEND FORMATS VST3)
+endif()
+
+if(IEM_BUILD_AU)
+    message("-- IEM: Building AU versions")
+    list (APPEND FORMATS AU)
+endif()
+
+if(IEM_BUILD_LV2)
+    message("-- IEM: Building LV2 versions")
+    list (APPEND FORMATS LV2)
+endif()
+
+if(IEM_BUILD_STANDALONE)
+    message("-- IEM: Building Standalone versions")
+    list(APPEND FORMATS Standalone)
+endif()
+
 # Copy VST-Plugins into default directory
-set_directory_properties (PROPERTIES JUCE_COPY_PLUGIN_AFTER_BUILD ON)
+set_directory_properties(PROPERTIES JUCE_COPY_PLUGIN_AFTER_BUILD ON)
 
 # set copy paths for built plug-ins
 if (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-    set_directory_properties (PROPERTIES JUCE_VST_COPY_DIR "$ENV{HOME}/Library/Audio/Plug-Ins/VST/IEM")
-    set_directory_properties (PROPERTIES JUCE_VST3_COPY_DIR "$ENV{HOME}/Library/Audio/Plug-Ins/VST3/IEM")
-    set_directory_properties (PROPERTIES JUCE_LV2_COPY_DIR "$ENV{HOME}/Library/Audio/Plug-Ins/LV2")
+    set_directory_properties(PROPERTIES JUCE_VST_COPY_DIR "$ENV{HOME}/Library/Audio/Plug-Ins/VST/IEM")
+    set_directory_properties(PROPERTIES JUCE_VST3_COPY_DIR "$ENV{HOME}/Library/Audio/Plug-Ins/VST3/IEM")
+    set_directory_properties(PROPERTIES JUCE_LV2_COPY_DIR "$ENV{HOME}/Library/Audio/Plug-Ins/LV2")
 
-elseif (CMAKE_SYSTEM_NAME STREQUAL "Windows")
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-        set_directory_properties (PROPERTIES JUCE_VST_COPY_DIR "$ENV{ProgramW6432}/Steinberg/VSTplugins/IEM")
-        set (prefix "$ENV{CommonProgramW6432}")
+        set_directory_properties(PROPERTIES JUCE_VST_COPY_DIR "$ENV{ProgramW6432}/Steinberg/VSTplugins/IEM")
+        set(prefix "$ENV{CommonProgramW6432}")
     else()
-        set_directory_properties (PROPERTIES JUCE_VST_COPY_DIR "$ENV{programfiles\(x86\)}/Steinberg/VstPlugins/IEM")
-        set (prefix "$ENV{CommonProgramFiles\(x86\)}")
+        set_directory_properties(PROPERTIES JUCE_VST_COPY_DIR "$ENV{programfiles\(x86\)}/Steinberg/VstPlugins/IEM")
+        set(prefix "$ENV{CommonProgramFiles\(x86\)}")
     endif()
-    set_directory_properties (PROPERTIES JUCE_VST3_COPY_DIR "${prefix}/VST3/IEM")
-    set_directory_properties (PROPERTIES JUCE_LV2_COPY_DIR "${prefix}/LV2/IEM")
+    set_directory_properties(PROPERTIES JUCE_VST3_COPY_DIR "${prefix}/VST3/IEM")
+    set_directory_properties(PROPERTIES JUCE_LV2_COPY_DIR "${prefix}/LV2")
 
 elseif ((CMAKE_SYSTEM_NAME STREQUAL "Linux") OR (CMAKE_SYSTEM_NAME MATCHES ".*BSD"))
-    set_directory_properties (PROPERTIES JUCE_VST_COPY_DIR "$ENV{HOME}/.vst/IEM")
-    set_directory_properties (PROPERTIES JUCE_VST3_COPY_DIR "$ENV{HOME}/.vst3/IEM")
-    set_directory_properties (PROPERTIES JUCE_LV2_COPY_DIR "$ENV{HOME}/.lv2/IEM")
+    set_directory_properties(PROPERTIES JUCE_VST_COPY_DIR "$ENV{HOME}/.vst/IEM")
+    set_directory_properties(PROPERTIES JUCE_VST3_COPY_DIR "$ENV{HOME}/.vst3/IEM")
+    set_directory_properties(PROPERTIES JUCE_LV2_COPY_DIR "$ENV{HOME}/.lv2")
 endif()
 
 # Check the readme at `docs/CMake API.md` in the JUCE repo for full config
@@ -94,17 +138,17 @@ juce_add_plugin("${PROJECT_NAME}"
     VERSION "${VERSION}"
     PRODUCT_NAME "${PROJECT_NAME}")        # The name of the final executable, which can differ from the target name
 
-include_directories (resources/ /usr/local/include)
-add_compile_definitions (DONT_SET_USING_JUCE_NAMESPACE=1
-                         JUCE_MODAL_LOOPS_PERMITTED=1)
+include_directories(resources/ /usr/local/include)
+add_compile_definitions(DONT_SET_USING_JUCE_NAMESPACE=1
+                        JUCE_MODAL_LOOPS_PERMITTED=1)
 
-juce_add_binary_data (LAF_fonts SOURCES
+juce_add_binary_data(LAF_fonts SOURCES
     resources/lookAndFeel/Roboto-Bold.ttf
     resources/lookAndFeel/Roboto-Light.ttf
     resources/lookAndFeel/Roboto-Medium.ttf
     resources/lookAndFeel/Roboto-Regular.ttf)
 
-juce_generate_juce_header (CQTAnalyzer)
+juce_generate_juce_header(CQTAnalyzer)
 
 # Manually list all .h and .cpp files for the plugin
 set(SourceFiles
@@ -144,8 +188,10 @@ if(Standalone IN_LIST FORMATS)
     source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX "" FILES ${StandaloneFiles})
 endif()
 
-# TODO: Enable Jack Support
-target_compile_definitions("${PROJECT_NAME}" PUBLIC DONT_BUILD_WITH_JACK_SUPPORT=1)
+# Disable Jack support if it is not desired
+if (NOT IEM_STANDALONE_JACK_SUPPORT)
+    target_compile_definitions("${PROJECT_NAME}" PUBLIC DONT_BUILD_WITH_JACK_SUPPORT=1)
+endif()
 
 # No, we don't want our source buried in extra nested folders
 set_target_properties("${PROJECT_NAME}" PROPERTIES FOLDER "")
