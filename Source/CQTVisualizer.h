@@ -21,7 +21,7 @@ along with this software.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 #pragma once
-#include "JuceHeader.h"
+#include <JuceHeader.h>
 #include "CQTThread.h"
 
 class CQTVisualizer : public juce::Component, private juce::Timer

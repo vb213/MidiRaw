@@ -68,10 +68,10 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 
 elseif (CMAKE_SYSTEM_NAME STREQUAL "Windows")
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-        set_directory_properties (PROPERTIES JUCE_VST_COPY_DIR "$ENV{ProgramW6432}/Steinberg/Vstplugins/IEM")
+        set_directory_properties (PROPERTIES JUCE_VST_COPY_DIR "$ENV{ProgramW6432}/Steinberg/VSTplugins/IEM")
         set (prefix "$ENV{CommonProgramW6432}")
     else()
-        set_directory_properties (PROPERTIES JUCE_VST_COPY_DIR "$ENV{programfiles\(x86\)}/Steinberg/Vstplugins/IEM")
+        set_directory_properties (PROPERTIES JUCE_VST_COPY_DIR "$ENV{programfiles\(x86\)}/Steinberg/VstPlugins/IEM")
         set (prefix "$ENV{CommonProgramFiles\(x86\)}")
     endif()
     set_directory_properties (PROPERTIES JUCE_VST3_COPY_DIR "${prefix}/VST3/IEM")
@@ -89,6 +89,7 @@ juce_add_plugin("${PROJECT_NAME}"
     PLUGIN_MANUFACTURER_CODE Iema               # This has to be one uppercase, rest lower for AU formats
     PLUGIN_CODE CQTA                            # A unique four-character plugin id with at least one upper-case character
     FORMATS "${FORMATS}"
+    VERSION "${VERSION}"
     PRODUCT_NAME "${PROJECT_NAME}")        # The name of the final executable, which can differ from the target name
 
 include_directories (resources/ /usr/local/include)
@@ -119,13 +120,25 @@ set(SourceFiles
     Source/Utilities/OverlappingSampleCollector.h
     Source/Utilities/Parula.h
     
+    resources/lookAndFeel/IEM_LaF.h
     resources/OSC/OSCInputStream.h
     resources/OSC/OSCParameterInterface.cpp
     resources/OSC/OSCParameterInterface.h
     resources/OSC/OSCStatus.cpp
     resources/OSC/OSCStatus.h
-    resources/OSC/OSCUtilities.h)
+    resources/OSC/OSCUtilities.h
+
+    # Those last ones are only needed for standalone app support
+    # TODO: Include only if standalone is selected
+    resources/Standalone/StandaloneApp.cpp
+    resources/Standalone/MyStandaloneFilterWindow.h
+    resources/Standalone/IEM_JackAudio.h
+    resources/Standalone/IEM_AudioDeviceSelectorComponent.cpp
+    resources/Standalone/IEM_AudioDeviceSelectorComponent.h)
 target_sources("${PROJECT_NAME}" PRIVATE ${SourceFiles})
+
+# TODO: Enable Jack Support
+target_compile_definitions("${PROJECT_NAME}" PUBLIC DONT_BUILD_WITH_JACK_SUPPORT=1)
 
 # No, we don't want our source buried in extra nested folders
 set_target_properties("${PROJECT_NAME}" PROPERTIES FOLDER "")
@@ -177,6 +190,7 @@ target_include_directories("${PROJECT_NAME}" PRIVATE Source)
 target_link_libraries("${PROJECT_NAME}" PRIVATE
     LAF_fonts
     ${JUCE_DEPENDENCIES}
+    juce::juce_audio_utils
     juce::juce_audio_plugin_client
     juce::juce_osc
     juce::juce_dsp

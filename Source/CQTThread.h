@@ -22,7 +22,7 @@ along with this software.  If not, see <https://www.gnu.org/licenses/>.
 
 #pragma once
 
-#include "JuceHeader.h"
+#include <JuceHeader.h>
 
 #include "Utilities/BufferQueue.h"
 #include "Utilities/OverlappingSampleCollector.h"

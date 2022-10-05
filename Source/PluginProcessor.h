@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "JuceHeader.h"
+#include <JuceHeader.h>
 #include "../resources/AudioProcessorBase.h"
 #include "CQTThread.h"
 
