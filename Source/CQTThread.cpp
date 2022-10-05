@@ -33,11 +33,11 @@ CQTThread::Params::Params (const double fs, const float fMin, const float nOctav
     const double Q = 1.0 / (exp2 (1.0 / B) - exp2 (-1.0 / B));
     const double alpha = 1 / Q;
     
-    const auto m = exp2 (1.0 / B);
+    const float m = (float) exp2 (1.0 / B);
 
-    const float fMax = juce::jmin (fs / 2 / m, fMin * pow (2, nOctaves));
+    const double fMax = juce::jmin (fs / 2 / m, fMin * pow (2, nOctaves));
 
-    K = juce::roundToInt (std::floor (std::log2 (fMax / fMin) * B));
+    K = (uint) juce::roundToInt (std::floor (std::log2 (fMax / fMin) * B));
     binsPerSemitone = int(B / 12.0);
     
 
@@ -48,7 +48,7 @@ CQTThread::Params::Params (const double fs, const float fMin, const float nOctav
     frequencies.resize (K);
     B_gammacorrected.resize(K);
     
-    for (int k = 0; k < K; ++k)
+    for (uint k = 0; k < K; ++k)
     {
         
         if (k == 0)
@@ -57,9 +57,9 @@ CQTThread::Params::Params (const double fs, const float fMin, const float nOctav
             frequencies[k] = frequencies[k - 1] * m;
         
         //bandwidth
-        bandwidth[k] = alpha * frequencies[k] + gamma;
+        bandwidth[k] = (float) alpha * frequencies[k] + gamma;
         
-        Nk = ceil (round (fs / fMin) * (frequencies[k] / bandwidth[k]));  // calculate number of samples for this center-frequency
+        Nk = (int) ceil (round (fs / fMin) * (frequencies[k] / bandwidth[k]));  // calculate number of samples for this center-frequency
         
         if (Nk > Nk_max)
             Nk_max = Nk;
@@ -67,22 +67,22 @@ CQTThread::Params::Params (const double fs, const float fMin, const float nOctav
         if (bandwidth[k] > bandwidth_max)
             bandwidth_max = bandwidth[k];
         
-        B_gammacorrected[k] = log (2.0) / asinh (bandwidth[k] / (2 * frequencies[k]));
+        B_gammacorrected[k] = (float) log (2.0) / asinh (bandwidth[k] / (2 * frequencies[k]));
     }
 
     
-    blockLength = juce::nextPowerOfTwo (ceil (Nk_max));
+    blockLength = juce::nextPowerOfTwo ((int) ceil (Nk_max));
     fftSize = (fftOversampling * blockLength);
-    fftOrder = log2 (fftSize);
+    fftOrder = (int) log2 (fftSize);
     
     df = fs / fftSize;
     
-    ifftSize = juce::nextPowerOfTwo (bandwidth_max / df);
-    ifftOrder = log2 (ifftSize);
+    ifftSize = juce::nextPowerOfTwo (juce::roundToInt(bandwidth_max / df));
+    ifftOrder = (int) log2 (ifftSize);
     
     float overlapFactor = 0.5;
     
-    overlap = round (overlapFactor * blockLength);
+    overlap = juce::roundToInt (overlapFactor * blockLength);
     hopsize = ifftSize / fftOversampling / 2;
 }
 

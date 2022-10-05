@@ -46,7 +46,7 @@ class CQTThread  :  public juce::ReferenceCountedObject, public juce::Thread
         static constexpr int fftOversampling = 2;
         double sampleRate;
         int fftOrder, fftSize;
-        int K;
+        uint K;
         std::vector<float> frequencies;
         std::vector<float> B_gammacorrected;
         int ifftOrder, ifftSize;
@@ -78,7 +78,7 @@ public:
     using Ptr = juce::ReferenceCountedObjectPtr<CQTThread>;
 
     CQTThread (const double fs, const float fMin, const float nOctaves, const float B, const float gamma, const float tuningFreq, const float initialTunerStatus);
-    ~CQTThread();
+    ~CQTThread() override;
 
     /** Writes samples into queue, which will be processed once enough samples are gathered.
      */
