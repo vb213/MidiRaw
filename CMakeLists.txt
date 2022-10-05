@@ -30,7 +30,7 @@ set(PROJECT_NAME "CQTAnalyzer")
 
 # Set the plugin formats you'll be building here.
 # Valid formats: AAX Unity VST AU AUv3 Standalone
-set(FORMATS VST3 Standalone)
+set(FORMATS VST3 LV2 Standalone)
 
 # For simplicity, the name of the project is also the name of the target
 project(${PROJECT_NAME} 
@@ -61,10 +61,10 @@ add_git_submodule(JUCE)
 set_directory_properties (PROPERTIES JUCE_COPY_PLUGIN_AFTER_BUILD ON)
 
 # set copy paths for built plug-ins
-# TODO: Add paths for other plugin formats
 if (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     set_directory_properties (PROPERTIES JUCE_VST_COPY_DIR "$ENV{HOME}/Library/Audio/Plug-Ins/VST/IEM")
     set_directory_properties (PROPERTIES JUCE_VST3_COPY_DIR "$ENV{HOME}/Library/Audio/Plug-Ins/VST3/IEM")
+    set_directory_properties (PROPERTIES JUCE_LV2_COPY_DIR "$ENV{HOME}/Library/Audio/Plug-Ins/LV2")
 
 elseif (CMAKE_SYSTEM_NAME STREQUAL "Windows")
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -75,10 +75,12 @@ elseif (CMAKE_SYSTEM_NAME STREQUAL "Windows")
         set (prefix "$ENV{CommonProgramFiles\(x86\)}")
     endif()
     set_directory_properties (PROPERTIES JUCE_VST3_COPY_DIR "${prefix}/VST3/IEM")
+    set_directory_properties (PROPERTIES JUCE_LV2_COPY_DIR "${prefix}/LV2/IEM")
 
 elseif ((CMAKE_SYSTEM_NAME STREQUAL "Linux") OR (CMAKE_SYSTEM_NAME MATCHES ".*BSD"))
     set_directory_properties (PROPERTIES JUCE_VST_COPY_DIR "$ENV{HOME}/.vst/IEM")
     set_directory_properties (PROPERTIES JUCE_VST3_COPY_DIR "$ENV{HOME}/.vst3/IEM")
+    set_directory_properties (PROPERTIES JUCE_LV2_COPY_DIR "$ENV{HOME}/.lv2/IEM")
 endif()
 
 # Check the readme at `docs/CMake API.md` in the JUCE repo for full config
@@ -167,10 +169,6 @@ foreach(target ${FORMATS} "All")
         set_target_properties(${PROJECT_NAME}_${target} PROPERTIES
             # Tuck the actual plugin targets into a folder where they won't bother us
             FOLDER "Targets"
-
-            # MacOS only: Sets the default executable that Xcode will open on build
-            # For this exact path to to work, manually build the AudioPluginHost.xcodeproj in the JUCE subdir
-            XCODE_SCHEME_EXECUTABLE "${CMAKE_CURRENT_SOURCE_DIR}/JUCE/extras/AudioPluginHost/Builds/MacOSX/build/Debug/AudioPluginHost.app"
 
             # Let us build the target in Xcode
             XCODE_GENERATE_SCHEME ON)
