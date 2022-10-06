@@ -149,7 +149,7 @@ void CqtanalyzerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
     for (int ii = 0; ii < numberOfInputChannels; ++ii)
         copyBuffer.addFrom (0, 0, buffer, ii, 0, buffer.getNumSamples());
 
-    copyBuffer.applyGain (0, 0, copyBuffer.getNumSamples(), pow (10, *gain/20.0) / numberOfInputChannels);
+    copyBuffer.applyGain (0, 0, copyBuffer.getNumSamples(), float(pow (10, *gain/20.0) / numberOfInputChannels));
     
     // Here are the samples pushed into the buffer for QCT analysis
     auto retainedCqt = cqt;

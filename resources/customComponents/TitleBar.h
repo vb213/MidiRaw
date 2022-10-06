@@ -376,7 +376,7 @@ public:
             g.setFont (15.0f);
             g.drawFittedText (displayTextIfNotSelectable, 35, 15, 55, 15, juce::Justification::centred, 1);
         }
-    };
+    }
 
 private:
     juce::ComboBox cbNormalization, cbOrder;

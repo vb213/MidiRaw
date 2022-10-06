@@ -226,7 +226,7 @@ void CqtanalyzerAudioProcessorEditor::resized()
     area.removeFromBottom (sliderSize + labelOffset + 5);
 
     // UI control
-    juce::Rectangle<int> GainArea = area.removeFromRight (sliderSize * 0.7f);
+    juce::Rectangle<int> GainArea = area.removeFromRight (juce::roundToInt(sliderSize * 0.7f));
     slDBScale.setBounds(GainArea.removeFromTop(40));
     
     lbGain.setBounds (GainArea.removeFromBottom (labelOffset + 5));
@@ -294,8 +294,8 @@ void CqtanalyzerAudioProcessorEditor::timerCallback()
     
     auto currentGcAreaLeft = currentGcArea.removeFromLeft (sliderSize);
     auto currentGcAreaLeftSwitch = currentGcAreaLeft;
-    currentGcAreaLeftSwitch.removeFromLeft(sliderSize * 0.15f);
-    currentGcAreaLeftSwitch.removeFromRight(sliderSize * 0.15f);
+    currentGcAreaLeftSwitch.removeFromLeft(juce::roundToInt(sliderSize * 0.15f));
+    currentGcAreaLeftSwitch.removeFromRight(juce::roundToInt(sliderSize * 0.15f));
     
     slTunerStatus.setBounds(currentGcAreaLeftSwitch.removeFromTop (currentGcArea.getHeight()/2 -5));
     slTuning.setBounds (currentGcAreaLeft.removeFromBottom ( currentGcArea.getHeight()/2));
@@ -357,12 +357,12 @@ void CqtanalyzerAudioProcessorEditor::sliderDragEnded (juce::Slider *slider)
 }
 
 
-void CqtanalyzerAudioProcessorEditor::generateScale (const float nOctaves, const float nBPerOct, const float fMin)
+void CqtanalyzerAudioProcessorEditor::generateScale (const double nOctaves, const double nBPerOct, const double fMin)
 {
     lbFreq.clear();
     scItems.clear();
     
-    const float fMax = juce::jmin (samplerate / 2 / exp2 (1.0/nBPerOct), fMin * pow (2, nOctaves));
+    const double fMax = juce::jmin (samplerate / 2 / exp2 (1.0/nBPerOct), fMin * pow (2, nOctaves));
     const int numLabels = juce::roundToInt (std::floor (std::log2 (fMax / fMin))) + 1;
     
     for (int ii = 0; ii < numLabels; ++ii)

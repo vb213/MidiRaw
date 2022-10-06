@@ -67,7 +67,7 @@ private:
     // stored references to the AudioProcessor and ValueTreeState holding all the parameters
     CqtanalyzerAudioProcessor& audioProcessor;
     juce::AudioProcessorValueTreeState& valueTreeState;
-    void generateScale(const float nOctaves, const float nBPerOct, const float fMin);
+    void generateScale(const double nOctaves, const double nBPerOct, const double fMin);
 
 
     /* title and footer component
