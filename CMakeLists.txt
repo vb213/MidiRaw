@@ -53,7 +53,7 @@ if(IEM_MACOS_UNIVERSAL)
     set(CMAKE_OSX_ARCHITECTURES arm64 x86_64)
 endif()
 
-set(CMAKE_OSX_DEPLOYMENT_TARGET "10.09" CACHE STRING "Support macOS down to High Sierra")
+set(CMAKE_OSX_DEPLOYMENT_TARGET "10.09" CACHE STRING "Support macOS/OS X down to Mavericks")
 
 # Adds all the module sources so they appear correctly in the IDE
 # Must be set before JUCE is added as a sub-dir (or any targets are made)
@@ -77,7 +77,7 @@ if(IEM_BUILD_VST2)
     if(DEFINED VST2SDKPATH)
         juce_set_vst2_sdk_path (${VST2SDKPATH})
     else()
-        message(FATAL_ERROR "You have to specify the VST2PATH variable with the path to the VST2 SDK if you want to build VST2 versions.")
+        message(FATAL_ERROR "You have to specify the VST2SDKPATH variable with the path to the VST2 SDK if you want to build VST2 versions.")
     endif()
 endif()
 
