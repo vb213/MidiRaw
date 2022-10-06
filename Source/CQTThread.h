@@ -56,8 +56,8 @@ class CQTThread  :  public juce::ReferenceCountedObject, public juce::Thread
         double bandwidth_max;
         double gainFactor;
         int overlap;
-        int binsPerSemitone;
-        int nearestBinToTuning;
+        uint binsPerSemitone;
+        uint nearestBinToTuning;
         float tuning;
         const float gammaParam;
         
@@ -67,8 +67,8 @@ class CQTThread  :  public juce::ReferenceCountedObject, public juce::Thread
      */
     struct WindowWithPosition : public std::vector<float>
     {
-        WindowWithPosition (const int firstBin) : position (firstBin){}
-        const int position;
+        WindowWithPosition (const uint firstBin) : position (firstBin){}
+        const uint position;
     };
 
 public:

@@ -4,7 +4,7 @@ The Parula colormap which is also used by matlab.
 
 #pragma once
 
-const int parula[128][3] = {{62, 38, 168},
+const juce::uint8 parula[128][3] = {{62, 38, 168},
                             {63, 40, 175},
                             {64, 42, 180},
                             {65, 44, 186},

@@ -39,7 +39,7 @@ void CQTVisualizer::paint (juce::Graphics& g)
     auto bounds = getLocalBounds();
     const float prop = 1.0f - static_cast<float> (imageOffset) / image.getWidth();
 
-    const int mid = bounds.getWidth() * prop;
+    const int mid = juce::roundToInt(bounds.getWidth() * prop);
 
     g.drawImage (image, 0, 0, mid, bounds.getHeight(),
                  imageOffset, 0, image.getWidth() - imageOffset, image.getHeight());
@@ -67,7 +67,7 @@ void CQTVisualizer::reallocateImage (const int imageHeight)
     image = juce::Image (juce::Image::RGB, imageWidth, imageHeight, true);
     DBG("IS THIS IMAGE REALLOCATION");
     imageOffset = 0;
-    poppedData.resize (imageHeight);
+    poppedData.resize (uint(imageHeight));
 }
 
 void CQTVisualizer::updateData()
@@ -87,7 +87,7 @@ void CQTVisualizer::updateData()
             fifo.pop (poppedData.data());
             const float kFactor = ((127)/dynamicRange);
             
-            for (int h = 0; h < image.getHeight(); ++h)
+            for (uint h = 0; h < uint(image.getHeight()); ++h)
             {
                 float val;
                 
@@ -99,9 +99,9 @@ void CQTVisualizer::updateData()
                 {
                     val = 20*log10 (poppedData[h]) * kFactor + 127;
                 }
-                const int colourIndex = juce::jlimit (0, 127, juce::roundToInt (val));
+                const uint colourIndex = (uint) juce::jlimit (0, 127, juce::roundToInt (val));
                 const auto colour = juce::Colour (parula[colourIndex][0], parula[colourIndex][1], parula[colourIndex][2]);
-                image.setPixelAt (imageOffset, h, colour);
+                image.setPixelAt (imageOffset, int(h), colour);
             }
 
             ++imageOffset;
