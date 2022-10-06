@@ -21,17 +21,17 @@ along with this software.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 #pragma once
-#include "../JuceLibraryCode/JuceHeader.h"
+#include <JuceHeader.h>
 #include "CQTThread.h"
 
-class CQTVisualizer : public Component, private Timer
+class CQTVisualizer : public juce::Component, private juce::Timer
 {
     static constexpr int imageWidth = 2000;
 
 public:
-    CQTVisualizer (CQTThread::Ptr& cqt, AudioProcessorValueTreeState& vts);
+    CQTVisualizer (CQTThread::Ptr& cqt, juce::AudioProcessorValueTreeState& vts);
 
-    void paint (Graphics& g) override;
+    void paint (juce::Graphics& g) override;
     
     void setDBScale (float sc) { dBScale = bool (sc); }
     void setDynamicRange (float dr) { dynamicRange = dr; }
@@ -47,7 +47,7 @@ private:
 
     CQTThread::Ptr& cqt;
 
-    Image image;
+    juce::Image image;
     int imageOffset;
     
     bool dBScale;

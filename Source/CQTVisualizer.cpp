@@ -23,7 +23,7 @@ along with this software.  If not, see <https://www.gnu.org/licenses/>.
 #include "CQTVisualizer.h"
 #include "Utilities/Parula.h"
 
-CQTVisualizer::CQTVisualizer (CQTThread::Ptr& cqtThread, AudioProcessorValueTreeState& vts) : cqt (cqtThread)
+CQTVisualizer::CQTVisualizer (CQTThread::Ptr& cqtThread, juce::AudioProcessorValueTreeState& vts) : cqt (cqtThread)
 {
     
     dBScale = bool (*vts.getRawParameterValue ("dBScale"));
@@ -32,14 +32,14 @@ CQTVisualizer::CQTVisualizer (CQTThread::Ptr& cqtThread, AudioProcessorValueTree
     startTimer (20);
 }
 
-void CQTVisualizer::paint (Graphics& g)
+void CQTVisualizer::paint (juce::Graphics& g)
 {
     updateData();
 
     auto bounds = getLocalBounds();
     const float prop = 1.0f - static_cast<float> (imageOffset) / image.getWidth();
 
-    const int mid = bounds.getWidth() * prop;
+    const int mid = juce::roundToInt(bounds.getWidth() * prop);
 
     g.drawImage (image, 0, 0, mid, bounds.getHeight(),
                  imageOffset, 0, image.getWidth() - imageOffset, image.getHeight());
@@ -64,10 +64,10 @@ void CQTVisualizer::reallocateImage()
 
 void CQTVisualizer::reallocateImage (const int imageHeight)
 {
-    image = Image (Image::RGB, imageWidth, imageHeight, true);
+    image = juce::Image (juce::Image::RGB, imageWidth, imageHeight, true);
     DBG("IS THIS IMAGE REALLOCATION");
     imageOffset = 0;
-    poppedData.resize (imageHeight);
+    poppedData.resize (static_cast<unsigned int>(imageHeight));
 }
 
 void CQTVisualizer::updateData()
@@ -87,7 +87,7 @@ void CQTVisualizer::updateData()
             fifo.pop (poppedData.data());
             const float kFactor = ((127)/dynamicRange);
             
-            for (int h = 0; h < image.getHeight(); ++h)
+            for (unsigned int h = 0; h < static_cast<unsigned int>(image.getHeight()); ++h)
             {
                 float val;
                 
@@ -99,9 +99,9 @@ void CQTVisualizer::updateData()
                 {
                     val = 20*log10 (poppedData[h]) * kFactor + 127;
                 }
-                const int colourIndex = jlimit (0, 127, roundToInt (val));
-                const auto colour = Colour (parula[colourIndex][0], parula[colourIndex][1], parula[colourIndex][2]);
-                image.setPixelAt (imageOffset, h, colour);
+                const unsigned int colourIndex = static_cast<unsigned int> (juce::jlimit (0, 127, juce::roundToInt (val)));
+                const auto colour = juce::Colour (parula[colourIndex][0], parula[colourIndex][1], parula[colourIndex][2]);
+                image.setPixelAt (imageOffset, int(h), colour);
             }
 
             ++imageOffset;

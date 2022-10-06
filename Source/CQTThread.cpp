@@ -33,12 +33,12 @@ CQTThread::Params::Params (const double fs, const float fMin, const float nOctav
     const double Q = 1.0 / (exp2 (1.0 / B) - exp2 (-1.0 / B));
     const double alpha = 1 / Q;
     
-    const auto m = exp2 (1.0 / B);
+    const float m = static_cast<float> (exp2 (1.0 / B));
 
-    const float fMax = jmin (fs / 2 / m, fMin * pow (2, nOctaves));
+    const double fMax = juce::jmin (fs / 2 / m, fMin * pow (2, nOctaves));
 
-    K = roundToInt (std::floor (std::log2 (fMax / fMin) * B));
-    binsPerSemitone = int(B / 12.0);
+    K = static_cast<unsigned int> (juce::roundToInt (std::floor (std::log2 (fMax / fMin) * B)));
+    binsPerSemitone = static_cast<unsigned int> (B / 12.0);
     
 
     int Nk = 0;  // current number of samples for each frequencybin
@@ -48,7 +48,7 @@ CQTThread::Params::Params (const double fs, const float fMin, const float nOctav
     frequencies.resize (K);
     B_gammacorrected.resize(K);
     
-    for (int k = 0; k < K; ++k)
+    for (unsigned int k = 0; k < K; ++k)
     {
         
         if (k == 0)
@@ -57,9 +57,9 @@ CQTThread::Params::Params (const double fs, const float fMin, const float nOctav
             frequencies[k] = frequencies[k - 1] * m;
         
         //bandwidth
-        bandwidth[k] = alpha * frequencies[k] + gamma;
+        bandwidth[k] = static_cast<float> (alpha * frequencies[k] + gamma);
         
-        Nk = ceil (round (fs / fMin) * (frequencies[k] / bandwidth[k]));  // calculate number of samples for this center-frequency
+        Nk = static_cast<int> (ceil (round (fs / fMin) * (frequencies[k] / bandwidth[k])));  // calculate number of samples for this center-frequency
         
         if (Nk > Nk_max)
             Nk_max = Nk;
@@ -67,22 +67,22 @@ CQTThread::Params::Params (const double fs, const float fMin, const float nOctav
         if (bandwidth[k] > bandwidth_max)
             bandwidth_max = bandwidth[k];
         
-        B_gammacorrected[k] = log (2.0) / asinh (bandwidth[k] / (2 * frequencies[k]));
+        B_gammacorrected[k] = static_cast<float> (log (2.0) / asinh (bandwidth[k] / (2 * frequencies[k])));
     }
 
     
-    blockLength = nextPowerOfTwo (ceil (Nk_max));
+    blockLength = juce::nextPowerOfTwo (static_cast<int>( ceil (Nk_max)));
     fftSize = (fftOversampling * blockLength);
-    fftOrder = log2 (fftSize);
+    fftOrder = static_cast<int> (log2 (fftSize));
     
     df = fs / fftSize;
     
-    ifftSize = nextPowerOfTwo (bandwidth_max / df);
-    ifftOrder = log2 (ifftSize);
+    ifftSize = juce::nextPowerOfTwo (juce::roundToInt(bandwidth_max / df));
+    ifftOrder = static_cast<int> (log2 (ifftSize));
     
     float overlapFactor = 0.5;
     
-    overlap = round (overlapFactor * blockLength);
+    overlap = juce::roundToInt (overlapFactor * blockLength);
     hopsize = ifftSize / fftOversampling / 2;
 }
 
@@ -94,20 +94,20 @@ audioBufferFifo (params.blockLength, numberOfBuffersInQueue),
 collector (audioBufferFifo, params.overlap), // second params is overlap (in samples)
 fft (params.fftOrder),
 ifft (params.ifftOrder),
-cqtFifo (params.K, numberOfBuffersInCQTQueue)
+cqtFifo (static_cast<int>(params.K), numberOfBuffersInCQTQueue)
 {
-    fftData.resize (2 * params.fftSize);
-    ifftInData.resize (params.ifftSize);
-    ifftOutData.resize(params.ifftSize);
+    fftData.resize (static_cast<unsigned int> (2 * params.fftSize));
+    ifftInData.resize (static_cast<unsigned int>(params.ifftSize));
+    ifftOutData.resize(static_cast<unsigned int>(params.ifftSize));
 
-    cqtBuffer.setSize (params.K, params.ifftSize);
+    cqtBuffer.setSize (static_cast<int>(params.K), params.ifftSize);
     cqtBuffer.clear();
 
     cqtCollectorBuffer.resize (params.K);
     
     setTuningFreq(tuningFreq);
     integratedTuning = tuningFreq;
-    tunerStatus = bool (initialTunerStatus);
+    tunerStatus = static_cast<bool>(initialTunerStatus);
     
     computeWindows();
 
@@ -126,52 +126,52 @@ CQTThread::~CQTThread()
 void CQTThread::computeWindows()
 {
     // Window for each sample-block --> in time domain
-    hannWindowForTimedomain.resize (params.blockLength);
-    WindowingFunction<float>::fillWindowingTables (hannWindowForTimedomain.data(), params.blockLength, WindowingFunction<float>::hann, false);
+    hannWindowForTimedomain.resize (static_cast<unsigned int>(params.blockLength));
+    WindowingFunction<float>::fillWindowingTables (hannWindowForTimedomain.data(), static_cast<unsigned int>(params.blockLength), WindowingFunction<float>::hann, false);
     
-    std::vector<float> hannLookup (8 * params.ifftSize + 1); // maybe a smaller window is already sufficient
+    std::vector<float> hannLookup (static_cast<unsigned int>(8 * params.ifftSize + 1)); // maybe a smaller window is already sufficient
     WindowingFunction<float>::fillWindowingTables (hannLookup.data(), hannLookup.size(), WindowingFunction<float>::hann, false);
-    const int halfwin_len = floor (hannLookup.size() / 2);
+    const int halfwin_len = static_cast<int>(floor (hannLookup.size() / 2));
     
     windows.resize (params.K);
     const double df = params.sampleRate / params.fftSize;
     
-    for (int k = 0; k < params.K; ++k)
+    for (unsigned int k = 0; k < params.K; ++k)
     {
         float fc = params.frequencies[k];
         
-        int firstBin = ceil (fc * exp2 (-1 / params.B_gammacorrected[k]) / df);
-        int lastBin = floor (fc * exp2 (1 / params.B_gammacorrected[k]) / df);
+        int firstBin = static_cast<int> (ceil (fc * exp2 (-1 / params.B_gammacorrected[k]) / df));
+        int lastBin = static_cast<int>(floor (fc * exp2 (1 / params.B_gammacorrected[k]) / df));
 
         int winLength = lastBin - firstBin + 1;
 
         // Initialize window-array
         windows[k] = std::make_unique<WindowWithPosition> (firstBin);
-        windows[k]->resize (winLength);
+        windows[k]->resize (static_cast<unsigned int>(winLength));
         
         // Calculate corresponding frequencies of the lookup-window for the current CQT-bin
         std::vector<float> windowFrequencies (hannLookup.size());
-        for (int jj = 0; jj < hannLookup.size(); ++jj)
-            windowFrequencies[jj] = fc * exp2 ((-halfwin_len + jj) / (halfwin_len * params.B_gammacorrected[k]));
+        for (unsigned int jj = 0; jj < hannLookup.size(); ++jj)
+            windowFrequencies[jj] = fc * exp2 ((-halfwin_len + static_cast<int>(jj)) / (halfwin_len * params.B_gammacorrected[k]));
 
         // New window calculation, not so efficient but way more accurate
-        for (int ii = 0; ii < winLength; ++ii)
+        for (unsigned int ii = 0; ii < static_cast<unsigned int>(winLength); ++ii)
         {
             std::vector<float> frequencyDifference = windowFrequencies;
             
             // Calculate difference to currently evaluated DFT-bin
-            for (int jj = 0; jj < hannLookup.size(); ++jj)
-                frequencyDifference[jj] = fabs (windowFrequencies[jj] - (firstBin + ii) * params.df);
+            for (unsigned int jj = 0; jj < hannLookup.size(); ++jj)
+                frequencyDifference[jj] = static_cast<float> (fabs (windowFrequencies[jj] - (firstBin + static_cast<int>(ii)) * params.df));
             
             // find minimum difference
-            const int win_idx = int (std::min_element (frequencyDifference.begin(), frequencyDifference.end()) - frequencyDifference.begin());
+            const unsigned int win_idx = static_cast<unsigned int> (std::min_element (frequencyDifference.begin(), frequencyDifference.end()) - frequencyDifference.begin());
             
             // Store results in window-array
             windows[k]->operator[] (ii) = hannLookup[win_idx];
         }
         
         // fft normalization
-        FloatVectorOperations::multiply (windows[k]->data(), 1.0f / params.fftSize, static_cast<int> (windows[k]->size()));
+        juce::FloatVectorOperations::multiply (windows[k]->data(), 1.0f / params.fftSize, static_cast<int> (windows[k]->size()));
     }
 
     DBG("Windows calculated");
@@ -194,28 +194,29 @@ void CQTThread::run()
         else // do processing
         {
             // Reset FFT-Vector to 0
-            for (int ii = 0; ii < fftData.size(); ii++)
+            for (unsigned int ii = 0; ii < fftData.size(); ii++)
                 fftData.data()[ii] = 0.0f;
             
             // pop next buffer from  queue
             audioBufferFifo.pop (fftData.data());
  
             // Apply window in time domain for blockbased processing
-            FloatVectorOperations::multiply(fftData.data(), hannWindowForTimedomain.data(), params.blockLength);
+            juce::FloatVectorOperations::multiply(fftData.data(), hannWindowForTimedomain.data(), params.blockLength);
 
             // RFFT
             fft.performRealOnlyForwardTransform(fftData.data(), true);
             
             // Iteration for each CQT-bin
-            for (int k = 0; k < params.K; ++k)
+            for (unsigned int k = 0; k < params.K; ++k)
             {
-                int winLen = static_cast<int> (windows[k]->size());
+                unsigned int winLen = static_cast<unsigned int> (windows[k]->size());
                 
                 // conversion to complex and applying window
-                for (int ii = 0; ii < params.ifftSize; ii++)
+                for (unsigned int ii = 0; ii < static_cast<unsigned int>(params.ifftSize); ii++)
                 {
                     if (ii < winLen)
-                        ifftInData[ii] = std::complex<float> (fftData[2 * (ii + windows[k]->position)], fftData[2 * (ii + windows[k]->position) + 1]) * windows[k]->data()[ii];
+                        ifftInData[ii] = std::complex<float> (fftData[2 * (ii + windows[k]->position)],
+                                                              fftData[2 * (ii + windows[k]->position) + 1]) * windows[k]->data()[ii];
                     else
                         ifftInData[ii] = std::complex<float> (0.0f, 0.0f);
 
@@ -226,8 +227,8 @@ void CQTThread::run()
                 // IFFT
                 ifft.perform (ifftInData.data(), ifftOutData.data(), true);
 
-                for (int ii = 0; ii < params.ifftSize; ii++)
-                    cqtBuffer.addSample(k, ii, (params.fftSize / params.ifftSize * params.gainFactor * std::abs(ifftOutData.data()[ii])));
+                for (int ii = 0; ii < static_cast<int>(params.ifftSize); ii++)
+                    cqtBuffer.addSample(static_cast<int>(k), ii, float(params.fftSize / params.ifftSize * params.gainFactor * std::abs(ifftOutData.data()[ii])));
             }
             
             bool activationIdx = 0;
@@ -235,26 +236,26 @@ void CQTThread::run()
             // Setting samples and pushing into cqt-visualizer-FIFO
             for (int ii = 0; ii < params.hopsize; ii++)
             {
-                for (int k = 0; k < params.K; k++)
+                for (unsigned int k = 0; k < params.K; k++)
                 {
-                    cqtCollectorBuffer[cqtCollectorBuffer.size() - k - 1] = cqtBuffer.getSample (k, ii);      
+                    cqtCollectorBuffer[cqtCollectorBuffer.size() - k - 1] = cqtBuffer.getSample (static_cast<int>(k), ii);
 
                     if ((cqtCollectorBuffer[cqtCollectorBuffer.size() - k - 1] > 0.1) && params.binsPerSemitone > 2)
                         activationIdx = true;
                 }
 
-                cqtFifo.push (cqtCollectorBuffer.data(), params.K);
+                cqtFifo.push (cqtCollectorBuffer.data(), static_cast<int>(params.K));
             }
             
             
             // shifting cqtBuffer
             for (int ii = 0; ii < params.ifftSize - params.hopsize; ++ii)
-                for (int k = 0; k < params.K; k++)
+                for (int k = 0; k < static_cast<int>(params.K); ++k)
                     cqtBuffer.setSample (k, ii, cqtBuffer.getSample (k, ii + params.hopsize));
             
             // clearing last entries of cqtBuffer
-            for (int ii = params.ifftSize - params.hopsize; ii < params.ifftSize; ii++)
-                for (int k = 0; k < params.K; k++)
+            for (int ii = params.ifftSize - params.hopsize; ii < params.ifftSize; ++ii)
+                for (int k = 0; k < static_cast<int>(params.K); ++k)
                     cqtBuffer.setSample (k, ii, 0.0f);
 
             // Start tuner
@@ -270,7 +271,7 @@ void CQTThread::setTuningFreq (const float newTuning)
     params.tuning = newTuning;
     
     float minOffset = 100.0f;
-    for (int k = 0; k < params.K; k++){
+    for (unsigned int k = 0; k < params.K; k++){
         if (fabs (params.frequencies[k] - params.tuning) < minOffset)
         {
             params.nearestBinToTuning = k;
@@ -293,13 +294,13 @@ void CQTThread::calculateTuning()
     if ((params.nearestBinToTuning < 2) || ((params.nearestBinToTuning-1) == params.K))
         setTuningFreq (params.tuning);
     
-    int modTuning = params.nearestBinToTuning % params.binsPerSemitone;
+    unsigned int modTuning = params.nearestBinToTuning % params.binsPerSemitone;
     
     
     std::vector<float> summedCqt (3, 0.0f);
 
     
-    for (int ii = 0; ii < params.K; ++ii)
+    for (unsigned int ii = 0; ii < params.K; ++ii)
     {
         // summed at tuning bin
         if (ii % params.binsPerSemitone == modTuning){
@@ -335,10 +336,10 @@ void CQTThread::calculateTuning()
     float c = params.frequencies[params.nearestBinToTuning + 1];
     
     // actual calculation based upon parabolic interpolation
-    float newTuning = b + 0.5 * ((summedCqt[0] - summedCqt[1]) * pow((c - b), 2) -
-                                 (summedCqt[2] - summedCqt[1]) * pow((b - a), 2))/
-                                ((summedCqt[0] - summedCqt[1]) * (c - b) +
-                                 (summedCqt[2] - summedCqt[1]) * (b - a));
+    float newTuning = float(b + 0.5 * ((summedCqt[0] - summedCqt[1]) * pow((c - b), 2) -
+                                       (summedCqt[2] - summedCqt[1]) * pow((b - a), 2))/
+                                      ((summedCqt[0] - summedCqt[1]) * (c - b) +
+                                       (summedCqt[2] - summedCqt[1]) * (b - a)));
     
     // some sort of integration to smoothen the results
     if (tuningIterationCounter > maxTuningCounter)
@@ -350,7 +351,7 @@ void CQTThread::calculateTuning()
     detuningCents = 1200 * log2 (integratedTuning/params.tuning);
 
     // Modulo, so the solution is in the range of +- 100
-    detuningCents = float (roundToInt (detuningCents) % 100);
+    detuningCents = static_cast<float> (juce::roundToInt (detuningCents) % 100);
     
     // Limiting to +-50
     if (detuningCents > 50.0f)

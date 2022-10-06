@@ -31,9 +31,9 @@ CqtanalyzerAudioProcessor::CqtanalyzerAudioProcessor()
                       BusesProperties()
 #if ! JucePlugin_IsMidiEffect
 #if ! JucePlugin_IsSynth
-                      .withInput ("Input",  AudioChannelSet::stereo(), true)
+                      .withInput ("Input",  juce::AudioChannelSet::stereo(), true)
 #endif
-                      .withOutput ("Output", AudioChannelSet::stereo(), true)
+                      .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
 #endif
                        ,
 #endif
@@ -77,18 +77,18 @@ int CqtanalyzerAudioProcessor::getCurrentProgram()
 
 void CqtanalyzerAudioProcessor::setCurrentProgram (int index)
 {
-    ignoreUnused (index);
+    juce::ignoreUnused (index);
 }
 
-const String CqtanalyzerAudioProcessor::getProgramName (int index)
+const juce::String CqtanalyzerAudioProcessor::getProgramName (int index)
 {
-    ignoreUnused (index);
+    juce::ignoreUnused (index);
     return {};
 }
 
-void CqtanalyzerAudioProcessor::changeProgramName (int index, const String& newName)
+void CqtanalyzerAudioProcessor::changeProgramName (int index, const juce::String& newName)
 {
-    ignoreUnused (index, newName);
+    juce::ignoreUnused (index, newName);
 }
 
 //==============================================================================
@@ -118,8 +118,8 @@ bool CqtanalyzerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layou
   #else
     // This is the place where you check if the layout is supported.
     // In this template code we only support mono or stereo.
-    if (layouts.getMainOutputChannelSet() != AudioChannelSet::mono()
-     && layouts.getMainOutputChannelSet() != AudioChannelSet::stereo())
+    if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
+     && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
         return false;
 
     // This checks if the input layout matches the output layout
@@ -134,7 +134,7 @@ bool CqtanalyzerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layou
 #endif
 
 
-void CqtanalyzerAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer&)
+void CqtanalyzerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
 {
     // Only restart CQT Thread wen params changed AND slider is not dragged anymore
     if ((CqtParamChanged == true) && (sliderDrag == false))
@@ -149,7 +149,7 @@ void CqtanalyzerAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBu
     for (int ii = 0; ii < numberOfInputChannels; ++ii)
         copyBuffer.addFrom (0, 0, buffer, ii, 0, buffer.getNumSamples());
 
-    copyBuffer.applyGain (0, 0, copyBuffer.getNumSamples(), pow (10, *gain/20.0) / numberOfInputChannels);
+    copyBuffer.applyGain (0, 0, copyBuffer.getNumSamples(), float(pow (10, *gain/20.0) / numberOfInputChannels));
     
     // Here are the samples pushed into the buffer for QCT analysis
     auto retainedCqt = cqt;
@@ -164,20 +164,20 @@ bool CqtanalyzerAudioProcessor::hasEditor() const
     return true; // (change this to false if you choose to not supply an editor)
 }
 
-AudioProcessorEditor* CqtanalyzerAudioProcessor::createEditor()
+juce::AudioProcessorEditor* CqtanalyzerAudioProcessor::createEditor()
 {
     return new CqtanalyzerAudioProcessorEditor (*this, parameters);
 }
 
 //==============================================================================
-void CqtanalyzerAudioProcessor::getStateInformation (MemoryBlock& destData)
+void CqtanalyzerAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
   auto state = parameters.copyState();
 
   auto oscConfig = state.getOrCreateChildWithName ("OSCConfig", nullptr);
   oscConfig.copyPropertiesFrom (oscParameterInterface.getConfig(), nullptr);
 
-  std::unique_ptr<XmlElement> xml (state.createXml());
+  std::unique_ptr<juce::XmlElement> xml (state.createXml());
   copyXmlToBinary (*xml, destData);
 }
 
@@ -186,14 +186,14 @@ void CqtanalyzerAudioProcessor::setStateInformation (const void* data, int sizeI
 {
     // You should use this method to restore your parameters from this memory block,
     // whose contents will have been created by the getStateInformation() call.
-    std::unique_ptr<XmlElement> xmlState (getXmlFromBinary (data, sizeInBytes));
+    std::unique_ptr<juce::XmlElement> xmlState (getXmlFromBinary (data, sizeInBytes));
     if (xmlState.get() != nullptr)
         if (xmlState->hasTagName (parameters.state.getType()))
         {
-            parameters.replaceState (ValueTree::fromXml (*xmlState));
+            parameters.replaceState (juce::ValueTree::fromXml (*xmlState));
             if (parameters.state.hasProperty ("OSCPort")) // legacy
             {
-                oscParameterInterface.getOSCReceiver().connect (parameters.state.getProperty ("OSCPort", var (-1)));
+                oscParameterInterface.getOSCReceiver().connect (parameters.state.getProperty ("OSCPort", juce::var (-1)));
                 parameters.state.removeProperty ("OSCPort", nullptr);
             }
 
@@ -204,7 +204,7 @@ void CqtanalyzerAudioProcessor::setStateInformation (const void* data, int sizeI
 }
 
 //==============================================================================
-void CqtanalyzerAudioProcessor::parameterChanged (const String &parameterID, float newValue)
+void CqtanalyzerAudioProcessor::parameterChanged (const juce::String &parameterID, float newValue)
 {
     DBG ("Parameter with ID " << parameterID << " has changed. New value: " << newValue);
     
@@ -231,37 +231,37 @@ void CqtanalyzerAudioProcessor::timerCallback()
 }
 
 //==============================================================================
-std::vector<std::unique_ptr<RangedAudioParameter>> CqtanalyzerAudioProcessor::createParameterLayout()
+std::vector<std::unique_ptr<juce::RangedAudioParameter>> CqtanalyzerAudioProcessor::createParameterLayout()
 {
     // add your audio parameters here
-    std::vector<std::unique_ptr<RangedAudioParameter>> params;
+    std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
 
     params.push_back (OSCParameterInterface::createParameterTheOldWay ("fMin", "Minimum Analysis Frequency ", "Hz",
-                                                                       NormalisableRange<float> (55.0f, 300.0f, 0.1f), 110.0f,
-                                                                       [](float value) {return String (value);}, nullptr));
+                                                                       juce::NormalisableRange<float> (55.0f, 300.0f, 0.1f), 110.0f,
+                                                                       [](float value) {return juce::String (value);}, nullptr));
     
     params.push_back (OSCParameterInterface::createParameterTheOldWay ("nOctaves", "Number of Analyzed Octaves ", "",
-                                                                       NormalisableRange<float> (1.0f, 8.0f, 1.0f), 5.0f,
-                                                                       [](float value) {return String (value);}, nullptr));
+                                                                       juce::NormalisableRange<float> (1.0f, 8.0f, 1.0f), 5.0f,
+                                                                       [](float value) {return juce::String (value);}, nullptr));
     
     params.push_back (OSCParameterInterface::createParameterTheOldWay ("bPerOct", "Bins per Octave ", "",
-                                                                       NormalisableRange<float> (12.0f, 72.0f, 12.0f), 48.0f,
-                                                                       [](float value) {return String (value);}, nullptr));
+                                                                       juce::NormalisableRange<float> (12.0f, 72.0f, 12.0f), 48.0f,
+                                                                       [](float value) {return juce::String (value);}, nullptr));
     
     params.push_back (OSCParameterInterface::createParameterTheOldWay ("gamma", "Gamma (for better Time-Resolution at low frequencies) ", "",
-                                                                       NormalisableRange<float> (0.0f, 30.0f, 0.1f), 0.0f,
-                                                                       [](float value) {return String (value);}, nullptr));
+                                                                       juce::NormalisableRange<float> (0.0f, 30.0f, 0.1f), 0.0f,
+                                                                       [](float value) {return juce::String (value);}, nullptr));
     
     params.push_back (OSCParameterInterface::createParameterTheOldWay ("gain", "Gain for Visualization ", "dB",
-                                                                       NormalisableRange<float> (-35.0f, 35.0f, 0.1f), 0.0f,
-                                                                       [](float value) {return String (value);}, nullptr));
+                                                                       juce::NormalisableRange<float> (-35.0f, 35.0f, 0.1f), 0.0f,
+                                                                       [](float value) {return juce::String (value);}, nullptr));
     
     params.push_back (OSCParameterInterface::createParameterTheOldWay ("tuningFreq", "Tuning Frequency ", "Hz",
-                                                                       NormalisableRange<float> (432.0f, 448.0f, 1.0f), 440.0f,
-                                                                       [](float value) {return String (value);}, nullptr));
+                                                                       juce::NormalisableRange<float> (432.0f, 448.0f, 1.0f), 440.0f,
+                                                                       [](float value) {return juce::String (value);}, nullptr));
     
     params.push_back (OSCParameterInterface::createParameterTheOldWay ("dBScale", "dB Scale ", "",
-                                                                       NormalisableRange<float> (0.0f, 1.0f, 1.0f), 0.0f,
+                                                                       juce::NormalisableRange<float> (0.0f, 1.0f, 1.0f), 0.0f,
                                                                        [](float value)
                                                                        {
                                                                            if (value >= 0.5f ) return "dB";
@@ -269,11 +269,11 @@ std::vector<std::unique_ptr<RangedAudioParameter>> CqtanalyzerAudioProcessor::cr
                                                                        }, nullptr));
     
     params.push_back (OSCParameterInterface::createParameterTheOldWay ("dynamicRange", "Dynamic Range", "dB",
-                                                                       NormalisableRange<float> (10.0f, 80.0f, 1.f), 40.0,
-                                                                       [](float value) {return String (value, 0);}, nullptr));
+                                                                       juce::NormalisableRange<float> (10.0f, 80.0f, 1.f), 40.0,
+                                                                       [](float value) {return juce::String (value, 0);}, nullptr));
     
     params.push_back (OSCParameterInterface::createParameterTheOldWay ("tunerStatus", "Tuner ", "",
-                                                                       NormalisableRange<float> (0.0f, 1.0f, 1.0f), 1.0f,
+                                                                       juce::NormalisableRange<float> (0.0f, 1.0f, 1.0f), 1.0f,
                                                                        [](float value)
                                                                        {
                                                                             if (value >= 0.5f ) return "on";
@@ -286,7 +286,7 @@ std::vector<std::unique_ptr<RangedAudioParameter>> CqtanalyzerAudioProcessor::cr
 
 //==============================================================================
 // This creates new instances of the plugin..
-AudioProcessor* JUCE_CALLTYPE createPluginFilter()
+juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     return new CqtanalyzerAudioProcessor();
 }

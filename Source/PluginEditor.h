@@ -22,41 +22,41 @@
 
 #pragma once
 
-#include "../JuceLibraryCode/JuceHeader.h"
+#include <JuceHeader.h>
 #include "PluginProcessor.h"
 
 //Plugin Design Essentials
-#include "../../resources/lookAndFeel/IEM_LaF.h"
-#include "../../resources/customComponents/TitleBar.h"
+#include "../resources/lookAndFeel/IEM_LaF.h"
+#include "../resources/customComponents/TitleBar.h"
 
 //Custom Components
-#include "../../resources/customComponents/ReverseSlider.h"
-#include "../../resources/customComponents/SimpleLabel.h"
+#include "../resources/customComponents/ReverseSlider.h"
+#include "../resources/customComponents/SimpleLabel.h"
 #include "CQTVisualizer.h"
 
 
 typedef ReverseSlider::SliderAttachment SliderAttachment; // all ReverseSliders will make use of the parameters' valueToText() function
-typedef AudioProcessorValueTreeState::ComboBoxAttachment ComboBoxAttachment;
-typedef AudioProcessorValueTreeState::ButtonAttachment ButtonAttachment;
+typedef juce::AudioProcessorValueTreeState::ComboBoxAttachment ComboBoxAttachment;
+typedef juce::AudioProcessorValueTreeState::ButtonAttachment ButtonAttachment;
 
 //==============================================================================
 /**
 */
-class CqtanalyzerAudioProcessorEditor  : public AudioProcessorEditor, private Timer, Slider::Listener
+class CqtanalyzerAudioProcessorEditor  : public juce::AudioProcessorEditor, private juce::Timer, juce::Slider::Listener
 {
 public:
-    CqtanalyzerAudioProcessorEditor (CqtanalyzerAudioProcessor&, AudioProcessorValueTreeState&);
+    CqtanalyzerAudioProcessorEditor (CqtanalyzerAudioProcessor&, juce::AudioProcessorValueTreeState&);
     ~CqtanalyzerAudioProcessorEditor() override;
 
     //==============================================================================
-    void paint (Graphics&) override;
+    void paint (juce::Graphics&) override;
     void resized() override;
 
 
     void timerCallback() override;
-    void sliderValueChanged (Slider *slider) override;
-    void sliderDragStarted(Slider *slider) override;
-    void sliderDragEnded(Slider *slider) override;
+    void sliderValueChanged (juce::Slider *slider) override;
+    void sliderDragStarted(juce::Slider *slider) override;
+    void sliderDragEnded(juce::Slider *slider) override;
     
     CQTVisualizer& getVisualizerComponent () { return cqtVisualizer; }
 private:
@@ -66,8 +66,8 @@ private:
 
     // stored references to the AudioProcessor and ValueTreeState holding all the parameters
     CqtanalyzerAudioProcessor& audioProcessor;
-    AudioProcessorValueTreeState& valueTreeState;
-    void generateScale(const float nOctaves, const float nBPerOct, const float fMin);
+    juce::AudioProcessorValueTreeState& valueTreeState;
+    void generateScale(const double nOctaves, const double nBPerOct, const double fMin);
 
 
     /* title and footer component
@@ -87,18 +87,18 @@ private:
     
     double samplerate;
     
-    GroupComponent gcTuning;
+    juce::GroupComponent gcTuning;
     
-    Slider slFMin, slNOctaves, slBPerOct, slGamma, slGain, slTuning, slDynamicRange, slDBScale, slTunerStatus;
+    juce::Slider slFMin, slNOctaves, slBPerOct, slGamma, slGain, slTuning, slDynamicRange, slDBScale, slTunerStatus;
     
     std::unique_ptr<SliderAttachment> slFMinAttachment, slNOctavesAttachment, slBPerOctAttachment, slGammaAttachment, slGainAttachment, slTuningAttachment, slDynamicRangeAttachment, slDBScaleAttachment, slTunerStatusAttachment;
     
-    Label lbDetuning;
+    juce::Label lbDetuning;
     
     SimpleLabel lbFMin, lbNOctaves, lbBPerOct, lbGamma, lbGain, lbTuning, lbDynamicRange;
-    OwnedArray<SimpleLabel> lbFreq;
+    juce::OwnedArray<SimpleLabel> lbFreq;
     
-    Rectangle<int> freqIdxArea;
+    juce::Rectangle<int> freqIdxArea;
     
     const int sliderSize = 70;
     const int labelOffset = 20;
@@ -109,8 +109,8 @@ private:
     
     const float gammaTh = 10.0f;
     
-    FlexBox flexboxScale;
-    Array<FlexItem> scItems;
+    juce::FlexBox flexboxScale;
+    juce::Array<juce::FlexItem> scItems;
 
 
 

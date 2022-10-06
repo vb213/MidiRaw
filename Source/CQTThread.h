@@ -22,7 +22,7 @@ along with this software.  If not, see <https://www.gnu.org/licenses/>.
 
 #pragma once
 
-#include "../JuceLibraryCode/JuceHeader.h"
+#include <JuceHeader.h>
 
 #include "Utilities/BufferQueue.h"
 #include "Utilities/OverlappingSampleCollector.h"
@@ -32,11 +32,11 @@ along with this software.  If not, see <https://www.gnu.org/licenses/>.
 #include <vector>
 #include <climits>
 
-using namespace dsp;
+using namespace juce::dsp;
 
 /** This class computes the Constant-Q Transform of incoming audio samples, which are buffered using a Fifo. The class starts a thread, which does all of the computation, and outputs the results into another Fifo. A CQTThread object is reference-counted. So you can easily set up another instance of it and overwrite the pointer of the previous one. Make sure you create a copy of the pointer before you call any methods, to ensure the object its members won't get deleted during processing.
  */
-class CQTThread  :  public ReferenceCountedObject, public Thread
+class CQTThread  :  public juce::ReferenceCountedObject, public juce::Thread
 {
     /** Helperclass which computes and holds the necessary parameters.
      */
@@ -46,7 +46,7 @@ class CQTThread  :  public ReferenceCountedObject, public Thread
         static constexpr int fftOversampling = 2;
         double sampleRate;
         int fftOrder, fftSize;
-        int K;
+        unsigned int K;
         std::vector<float> frequencies;
         std::vector<float> B_gammacorrected;
         int ifftOrder, ifftSize;
@@ -56,8 +56,8 @@ class CQTThread  :  public ReferenceCountedObject, public Thread
         double bandwidth_max;
         double gainFactor;
         int overlap;
-        int binsPerSemitone;
-        int nearestBinToTuning;
+        unsigned int binsPerSemitone;
+        unsigned int nearestBinToTuning;
         float tuning;
         const float gammaParam;
         
@@ -67,18 +67,18 @@ class CQTThread  :  public ReferenceCountedObject, public Thread
      */
     struct WindowWithPosition : public std::vector<float>
     {
-        WindowWithPosition (const int firstBin) : position (firstBin){}
-        const int position;
+        WindowWithPosition (const unsigned int firstBin) : position (firstBin){}
+        const unsigned int position;
     };
 
 public:
     static constexpr int numberOfBuffersInQueue = 10;
     static constexpr int numberOfBuffersInCQTQueue = 4096;
 
-    using Ptr = ReferenceCountedObjectPtr<CQTThread>;
+    using Ptr = juce::ReferenceCountedObjectPtr<CQTThread>;
 
     CQTThread (const double fs, const float fMin, const float nOctaves, const float B, const float gamma, const float tuningFreq, const float initialTunerStatus);
-    ~CQTThread();
+    ~CQTThread() override;
 
     /** Writes samples into queue, which will be processed once enough samples are gathered.
      */
@@ -132,7 +132,7 @@ private:
     
     const float gammaTh = 10.0f;
     
-    AudioBuffer<float> cqtBuffer;
+    juce::AudioBuffer<float> cqtBuffer;
     std::vector<float> cqtCollectorBuffer;
     BufferQueue<float> cqtFifo;
 };

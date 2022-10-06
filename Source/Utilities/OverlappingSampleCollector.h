@@ -35,7 +35,7 @@ public:
     {
         jassert (overlap < bufferSize);
 
-        buffer.resize (bufferSize);
+        buffer.resize (static_cast<unsigned int>(bufferSize));
         numCollected = 0;
 
         clearSkippedCounter();
@@ -88,11 +88,11 @@ public:
                     {
                         bufferQueue.push (buffer.data(), static_cast<int> (buffer.size())); // ... copy it into the queue
 
-                        const int overlapOffset = bufferSize - overlap; // where does the overlap start?
-                        for (int i = 0; i < overlap; ++i) // move the last overlap samples to the beginning
+                        const unsigned int overlapOffset = static_cast<unsigned int>(bufferSize - overlap); // where does the overlap start?
+                        for (unsigned int i = 0; i < static_cast<unsigned int>(overlap); ++i) // move the last overlap samples to the beginning
                             buffer[i] = buffer[overlapOffset + i];
 
-                        numCollected = overlap; // nice, we alreay have overlap many samples!
+                        numCollected = static_cast<unsigned int>(overlap); // nice, we alreay have overlap many samples!
 
                         state = State::waitingForFreeSpace; // let's wait for new space
                         break;
@@ -110,7 +110,7 @@ private:
     const int bufferSize;
     const int overlap;
 
-    Atomic<int> skippedSamples;
+    juce::Atomic<int> skippedSamples;
 
     size_t numCollected;
 
