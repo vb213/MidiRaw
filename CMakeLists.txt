@@ -1,4 +1,6 @@
-# This CMake Template is based on the pamplejuce project: https://github.com/sudara/pamplejuce/
+# This CMake Template is based on the pamplejuce project (https://github.com/sudara/pamplejuce/)
+# and the IEM Plug-in Suite (https://git.iem.at/audioplugins/IEMPluginSuite)
+
 # JUCE requires a CMake Version of 3.15, 3.20 or higher is recommended
 cmake_minimum_required(VERSION 3.15)
 

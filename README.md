@@ -1,4 +1,4 @@
-#  CQT Analyzer
+# CQT Analyzer
 
 ## Overview
 In this free and Open-Source audio plug-in, a real-time capable, efficient FFT based CQT Analyzer is implemented. A visualizer graphically shows the input signal in a time-frequency plot. Also, a simple but robust CQT-based tuner is integrated. A short demo-video can be found [here](https://vimeo.com/418146505).
@@ -33,6 +33,7 @@ The default paths for plug-ins are:
 You might need to restart your DAW before being able to use the plug-ins.
 
 ## Compilation Guide
+
 All you need for compiling the Plug-in is a recent version of [CMake](https://cmake.org/) and [Git](https://git-scm.com/) as well as a C++ compiler (e.g. bundled with Xcode for macOS or Visual Studio for Windows). JUCE is automatically added as git submodule, so no installation is needed.
 
 - Clone/download the repository
@@ -48,14 +49,29 @@ All you need for compiling the Plug-in is a recent version of [CMake](https://cm
 
 The project is configured to build VST3 and Standalone application by default. Other formats can be compiled by settings the flags ```-DIEM_BUILD_VST2=ON```, ```-DIEM_BUILD_AU=ON``` or ```-DIEM_BUILD_LV2=ON``` during the CMake generation. On macOS is by default no universal build generated to speed up development. However, it can be activated with the flag ```-DIEM_MACOS_UNIVERSAL=ON```. In order to build the VST2 versions of the plug-ins, you need to have a copy of the Steinberg VST2-SDK which no longer comes with JUCE.
 
-###  JACK support
+### JACK support
 
 Both on macOS and linux, the plug-in standalone version can be built with JACK support. You can enable the JACK support by setting ```-DIEM_STANDALONE_JACK_SUPPORT=ON```.
 
+## Known issues and improvements
+
+### Issues
+
+- Standalone build doesn't work properly
+- AU version causes Logic to crash (but it works in Reaper, so maybe an issue caused by the missing notarization)
+- Gain-Label shows around 0dB ridiculously many decimals
+
+### Possible improvements
+
+- Send Frequency and Value of highest peaks via OSC, i.e. for external visualization
+- Notarization for macOS
+
 ## Citation
+
 If you used this Plugin for a publication or a thesis, we would be glad if you cite our work:
 
 F. Holzmüller, P. Bereuter, P. Merz, D. Rudrich, and A. Sontacchi, “Computational effective real-time capable constant-Q spectrum analyzer,” in Proceedings of the AES 148th Convention, May 2020, [Online]. Available: http://www.aes.org/e-lib/browse.cfm?elib=20805.
 
 ## Related repositories
+
 - https://git.iem.at/audioplugins/IEMPluginSuite: a powerful, Open-Source toolbox of Ambisonics-Plugins. The UI is taken from this repository.
