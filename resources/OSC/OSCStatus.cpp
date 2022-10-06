@@ -105,7 +105,7 @@ OSCDialogWindow::OSCDialogWindow (OSCParameterInterface& oscInterface, OSCReceiv
     intervalSlider.setColour (juce::Slider::rotarySliderOutlineColourId, juce::Colours::cornflowerblue);
     intervalSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 60, 14);
     intervalSlider.setTextValueSuffix (" ms");
-    intervalSlider.onValueChange = [&] () { interface.setInterval (intervalSlider.getValue()); };
+    intervalSlider.onValueChange = [&] () { interface.setInterval (int(intervalSlider.getValue())); };
 
     addAndMakeVisible (slInterval);
     slInterval.setText ("Interval");

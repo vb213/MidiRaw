@@ -138,6 +138,7 @@ private:
     const bool hideAdvancedOptionsWithButton;
 
     class MidiInputSelectorComponentListBox;
+    juce::Array<juce::MidiDeviceInfo> currentMidiOutputs;
     std::unique_ptr<MidiInputSelectorComponentListBox> midiInputsList;
     std::unique_ptr<juce::ComboBox> midiOutputSelector;
     std::unique_ptr<juce::Label> midiInputsLabel, midiOutputLabel;

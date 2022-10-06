@@ -100,6 +100,23 @@ struct SimpleDeviceManagerInputLevelMeter  : public juce::Component,
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SimpleDeviceManagerInputLevelMeter)
 };
 
+static void drawTextLayout (juce::Graphics& g, juce::Component& owner, juce::StringRef text, const juce::Rectangle<int>& textBounds, bool enabled)
+{
+    const auto textColour = owner.findColour (juce::ListBox::textColourId, true).withMultipliedAlpha (enabled ? 1.0f : 0.6f);
+
+    juce::AttributedString attributedString { text };
+    attributedString.setColour (textColour);
+    attributedString.setFont ((float) textBounds.getHeight() * 0.6f);
+    attributedString.setJustification (juce::Justification::centredLeft);
+    attributedString.setWordWrap (juce::AttributedString::WordWrap::none);
+
+    juce::TextLayout textLayout;
+    textLayout.createLayout (attributedString,
+                             (float) textBounds.getWidth(),
+                             (float) textBounds.getHeight());
+    textLayout.draw (g, textBounds.toFloat());
+}
+
 
 //==============================================================================
 class IEMAudioDeviceSelectorComponent::MidiInputSelectorComponentListBox  : public juce::ListBox,
@@ -118,7 +135,7 @@ public:
 
     void updateDevices()
     {
-        items = juce::MidiInput::getDevices();
+        items = juce::MidiInput::getAvailableDevices();
     }
 
     int getNumRows() override
@@ -135,7 +152,7 @@ public:
                                .withMultipliedAlpha (0.3f));
 
             auto item = items[row];
-            bool enabled = deviceManager.isMidiInputEnabled (item);
+            bool enabled = deviceManager.isMidiInputDeviceEnabled (item.identifier);
 
             auto x = getTickX();
             auto tickW = height * 0.75f;
@@ -143,9 +160,7 @@ public:
             getLookAndFeel().drawTickBox (g, *this, x - tickW, (height - tickW) / 2, tickW, tickW,
                                           enabled, true, true, false);
 
-            g.setFont (height * 0.6f);
-            g.setColour (findColour (juce::ListBox::textColourId, true).withMultipliedAlpha (enabled ? 1.0f : 0.6f));
-            g.drawText (item, x + 5, 0, width - x - 5, height, juce::Justification::centredLeft, true);
+            drawTextLayout (g, *this, item.name, { x + 5, 0, width - x - 5, height }, enabled);
         }
     }
 
@@ -194,14 +209,14 @@ private:
     //==============================================================================
     juce::AudioDeviceManager& deviceManager;
     const juce::String noItemsMessage;
-    juce::StringArray items;
+    juce::Array<juce::MidiDeviceInfo> items;
 
     void flipEnablement (const int row)
     {
         if (juce::isPositiveAndBelow (row, items.size()))
         {
-            auto item = items[row];
-            deviceManager.setMidiInputEnabled (item, ! deviceManager.isMidiInputEnabled (item));
+            auto identifier = items[row].identifier;
+            deviceManager.setMidiInputDeviceEnabled (identifier, ! deviceManager.isMidiInputDeviceEnabled (identifier));
         }
     }
 
@@ -1132,12 +1147,12 @@ void IEMAudioDeviceSelectorComponent::updateDeviceType()
 
 void IEMAudioDeviceSelectorComponent::updateMidiOutput()
 {
-    auto midiDeviceName = midiOutputSelector->getText();
+    auto selectedId = midiOutputSelector->getSelectedId();
 
-    if (midiDeviceName == getNoDeviceString())
-        midiDeviceName = {};
-
-    deviceManager.setDefaultMidiOutput (midiDeviceName);
+    if (selectedId == -1)
+        deviceManager.setDefaultMidiOutputDevice ({});
+    else
+        deviceManager.setDefaultMidiOutputDevice (currentMidiOutputs[selectedId - 1].identifier);
 }
 
 void IEMAudioDeviceSelectorComponent::changeListenerCallback (juce::ChangeBroadcaster*)
@@ -1189,20 +1204,23 @@ void IEMAudioDeviceSelectorComponent::updateAllControls()
     {
         midiOutputSelector->clear();
 
-        auto midiOuts = juce::MidiOutput::getDevices();
+        currentMidiOutputs = juce::MidiOutput::getAvailableDevices();
 
         midiOutputSelector->addItem (getNoDeviceString(), -1);
         midiOutputSelector->addSeparator();
 
-        for (int i = 0; i < midiOuts.size(); ++i)
-            midiOutputSelector->addItem (midiOuts[i], i + 1);
+        auto defaultOutputIdentifier = deviceManager.getDefaultMidiOutputIdentifier();
+        int i = 0;
 
-        int current = -1;
+        for (auto& out : currentMidiOutputs)
+        {
+            midiOutputSelector->addItem (out.name, i + 1);
 
-        if (deviceManager.getDefaultMidiOutput() != nullptr)
-            current = 1 + midiOuts.indexOf (deviceManager.getDefaultMidiOutputName());
+            if (defaultOutputIdentifier.isNotEmpty() && out.identifier == defaultOutputIdentifier)
+                midiOutputSelector->setSelectedId (i + 1);
 
-        midiOutputSelector->setSelectedId (current, juce::dontSendNotification);
+            ++i;
+        }
     }
 
     resized();
