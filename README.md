@@ -70,7 +70,7 @@ Both on macOS and linux, the plug-in standalone version can be built with JACK s
 
 If you used this Plugin for a publication or a thesis, we would be glad if you cite our work:
 
-F. Holzmüller, P. Bereuter, P. Merz, D. Rudrich, and A. Sontacchi, “Computational effective real-time capable constant-Q spectrum analyzer,” in Proceedings of the AES 148th Convention, May 2020, [Online]. Available: http://www.aes.org/e-lib/browse.cfm?elib=20805.
+F. Holzmüller, P. Bereuter, P. Merz, D. Rudrich, and A. Sontacchi, “Computational efficient real-time capable constant-Q spectrum analyzer,” in Proceedings of the AES 148th Convention, May 2020, [Online]. Available: http://www.aes.org/e-lib/browse.cfm?elib=20805.
 
 ## Related repositories
 
