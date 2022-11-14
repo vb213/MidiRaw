@@ -64,7 +64,7 @@ Both on macOS and linux, the plug-in standalone version can be built with JACK s
 ### Possible improvements
 
 - Send Frequency and Value of highest peaks via OSC, i.e. for external visualization
-- Notarization for macOS
+- ~~Notarization for macOS~~
 
 ## Citation
 
