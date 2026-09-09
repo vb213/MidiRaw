@@ -25,6 +25,7 @@
 #include <JuceHeader.h>
 #include "../resources/AudioProcessorBase.h"
 #include "CQTThread.h"
+#include "MidiTranslator.h"
 
 #define ProcessorClass CqtanalyzerAudioProcessor
 
@@ -90,6 +91,8 @@ private:
     std::atomic<float>* dBScale;
     std::atomic<float>* dynamicRange;
     std::atomic<float>* tunerStatus;
+    std::atomic<float>* midiThreshold;
+    std::atomic<float>* midiChannel;
     
     double sr;
     bool sliderDrag = false;
@@ -98,6 +101,7 @@ private:
     juce::AudioBuffer<float> copyBuffer;
     
     CQTThread::Ptr cqt;
+    MidiTranslator::Ptr midiTranslator;
     
     bool CqtParamChanged = false;
 

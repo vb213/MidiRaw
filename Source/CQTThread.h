@@ -74,6 +74,7 @@ class CQTThread  :  public juce::ReferenceCountedObject, public juce::Thread
 public:
     static constexpr int numberOfBuffersInQueue = 10;
     static constexpr int numberOfBuffersInCQTQueue = 4096;
+    static constexpr int numberOfBuffersInMidiQueue = 1024;
 
     using Ptr = juce::ReferenceCountedObjectPtr<CQTThread>;
 
@@ -87,6 +88,12 @@ public:
     /** Returns the BufferQueue used to store the CQT coefficients. Make sure you hold a retained pointer to this reference-counted class, so the queue isn't destroyed during use.
      */
     BufferQueue<float>& getCqtFifo() { return cqtFifo; }
+
+    /** Returns a dedicated BufferQueue of spectra for the MIDI translator. It is
+        filled in parallel to getCqtFifo(), so the visualizer and the MIDI
+        translator can each consume their own queue without fighting for data.
+     */
+    BufferQueue<float>& getMidiFifo() { return midiFifo; }
     
     void setTuningFreq (const float newTuning);
     void setTunerStatus (const float newTunerStatus) { tunerStatus = bool (newTunerStatus); }
@@ -135,4 +142,5 @@ private:
     juce::AudioBuffer<float> cqtBuffer;
     std::vector<float> cqtCollectorBuffer;
     BufferQueue<float> cqtFifo;
+    BufferQueue<float> midiFifo;
 };

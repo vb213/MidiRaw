@@ -28,13 +28,13 @@ endfunction(add_git_submodule)
 
 # Name of the plugin
 # This cannot have spaces (but PRODUCT_NAME can)
-set(PROJECT_NAME "CQTAnalyzer")
+set(PROJECT_NAME "Midiraw")
 
 # For simplicity, the name of the project is also the name of the target
 project(${PROJECT_NAME} 
         VERSION 0.4.5
         LANGUAGES CXX C
-        HOMEPAGE_URL "https://iem.kug.ac.at/")
+        )
 
 # The following options let you select the plug-ins formats you want to build.
 # You can either change them here or use the command line to switch them on/off.
@@ -120,7 +120,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
         set_directory_properties(PROPERTIES JUCE_VST_COPY_DIR "$ENV{programfiles\(x86\)}/Steinberg/VstPlugins/IEM")
         set(prefix "$ENV{CommonProgramFiles\(x86\)}")
     endif()
-    set_directory_properties(PROPERTIES JUCE_VST3_COPY_DIR "${prefix}/VST3/IEM")
+    set_directory_properties(PROPERTIES JUCE_VST3_COPY_DIR "${prefix}/VST3/freilig")
     set_directory_properties(PROPERTIES JUCE_LV2_COPY_DIR "${prefix}/LV2")
 
 elseif ((CMAKE_SYSTEM_NAME STREQUAL "Linux") OR (CMAKE_SYSTEM_NAME MATCHES ".*BSD"))
@@ -133,12 +133,13 @@ endif()
 juce_add_plugin("${PROJECT_NAME}"
     ICON_BIG resources/Standalone/IEMPluginSuiteSmall.png
     ICON_SMALL resources/Standalone/IEMPluginSuiteSmall.png
-    COMPANY_NAME "IEM"
+    COMPANY_NAME "freilig."
     PLUGIN_MANUFACTURER_CODE Iema               # This has to be one uppercase, rest lower for AU formats
     PLUGIN_CODE CQTA                            # A unique four-character plugin id with at least one upper-case character
     FORMATS "${FORMATS}"
     VERSION "${VERSION}"
-    PRODUCT_NAME "${PROJECT_NAME}")        # The name of the final executable, which can differ from the target name
+    PRODUCT_NAME "${PROJECT_NAME}"
+    NEEDS_MIDI_OUTPUT TRUE)        # The name of the final executable, which can differ from the target name
 
 include_directories(resources/ /usr/local/include)
 add_compile_definitions(DONT_SET_USING_JUCE_NAMESPACE=1
@@ -150,7 +151,7 @@ juce_add_binary_data(LAF_fonts SOURCES
     resources/lookAndFeel/Roboto-Medium.ttf
     resources/lookAndFeel/Roboto-Regular.ttf)
 
-juce_generate_juce_header(CQTAnalyzer)
+juce_generate_juce_header(${PROJECT_NAME})
 
 # Manually list all .h and .cpp files for the plugin
 set(SourceFiles
@@ -163,6 +164,8 @@ set(SourceFiles
     Source/CQTThread.h
     Source/CQTVisualizer.cpp
     Source/CQTThread.cpp
+    Source/MidiTranslator.h
+    Source/MidiTranslator.cpp
 
     Source/Utilities/BufferQueue.h
     Source/Utilities/OverlappingSampleCollector.h

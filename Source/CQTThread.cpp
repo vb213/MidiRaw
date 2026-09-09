@@ -94,7 +94,8 @@ audioBufferFifo (params.blockLength, numberOfBuffersInQueue),
 collector (audioBufferFifo, params.overlap), // second params is overlap (in samples)
 fft (params.fftOrder),
 ifft (params.ifftOrder),
-cqtFifo (static_cast<int>(params.K), numberOfBuffersInCQTQueue)
+cqtFifo (static_cast<int>(params.K), numberOfBuffersInCQTQueue),
+    midiFifo (static_cast<int>(params.K), numberOfBuffersInMidiQueue)
 {
     fftData.resize (static_cast<unsigned int> (2 * params.fftSize));
     ifftInData.resize (static_cast<unsigned int>(params.ifftSize));
@@ -245,6 +246,7 @@ void CQTThread::run()
                 }
 
                 cqtFifo.push (cqtCollectorBuffer.data(), static_cast<int>(params.K));
+                midiFifo.push (cqtCollectorBuffer.data(), static_cast<int>(params.K));
             }
             
             
