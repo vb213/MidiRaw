@@ -87,10 +87,8 @@ private:
     std::atomic<float>* bPerOct;
     std::atomic<float>* gamma;
     std::atomic<float>* gain;
-    std::atomic<float>* tuningFreq;
     std::atomic<float>* dBScale;
     std::atomic<float>* dynamicRange;
-    std::atomic<float>* tunerStatus;
     std::atomic<float>* midiThreshold;
     std::atomic<float>* midiChannel;
     

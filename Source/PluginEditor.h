@@ -87,15 +87,13 @@ private:
     
     double samplerate;
     
-    juce::GroupComponent gcTuning;
     
-    juce::Slider slFMin, slNOctaves, slBPerOct, slGamma, slGain, slTuning, slDynamicRange, slDBScale, slTunerStatus;
+    juce::Slider slFMin, slNOctaves, slBPerOct, slGamma, slGain, slDynamicRange, slDBScale;
     
-    std::unique_ptr<SliderAttachment> slFMinAttachment, slNOctavesAttachment, slBPerOctAttachment, slGammaAttachment, slGainAttachment, slTuningAttachment, slDynamicRangeAttachment, slDBScaleAttachment, slTunerStatusAttachment;
+    std::unique_ptr<SliderAttachment> slFMinAttachment, slNOctavesAttachment, slBPerOctAttachment, slGammaAttachment, slGainAttachment, slDynamicRangeAttachment, slDBScaleAttachment;
     
-    juce::Label lbDetuning;
     
-    SimpleLabel lbFMin, lbNOctaves, lbBPerOct, lbGamma, lbGain, lbTuning, lbDynamicRange;
+    SimpleLabel lbFMin, lbNOctaves, lbBPerOct, lbGamma, lbGain, lbDynamicRange;
     juce::OwnedArray<SimpleLabel> lbFreq;
     
     juce::Rectangle<int> freqIdxArea;
@@ -107,7 +105,6 @@ private:
     const int freqScaleWidth = 30;
     const int freqScaleHeight = 10;
     
-    const float gammaTh = 10.0f;
     
     juce::FlexBox flexboxScale;
     juce::Array<juce::FlexItem> scItems;

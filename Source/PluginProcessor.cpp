@@ -45,10 +45,8 @@ CqtanalyzerAudioProcessor::CqtanalyzerAudioProcessor()
     bPerOct = parameters.getRawParameterValue ("bPerOct");
     gamma = parameters.getRawParameterValue ("gamma");
     gain = parameters.getRawParameterValue ("gain");
-    tuningFreq = parameters.getRawParameterValue ("tuningFreq");
     dBScale = parameters.getRawParameterValue ("dBScale");
     dynamicRange = parameters.getRawParameterValue ("dynamicRange");
-    tunerStatus = parameters.getRawParameterValue ("tunerStatus");
     midiThreshold = parameters.getRawParameterValue ("midiThreshold");
     midiChannel = parameters.getRawParameterValue ("midiChannel");
 
@@ -57,8 +55,6 @@ CqtanalyzerAudioProcessor::CqtanalyzerAudioProcessor()
     parameters.addParameterListener ("nOctaves", this);
     parameters.addParameterListener ("bPerOct", this);
     parameters.addParameterListener ("gamma", this);
-    parameters.addParameterListener ("tuningFreq", this);
-    parameters.addParameterListener ("tunerStatus", this);
     parameters.addParameterListener ("midiThreshold", this);
     parameters.addParameterListener ("midiChannel", this);
 }
@@ -99,7 +95,7 @@ void CqtanalyzerAudioProcessor::changeProgramName (int index, const juce::String
 void CqtanalyzerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     // Initialize CQTThread
-    cqt = new CQTThread (sampleRate, *fMin, *nOctaves, *bPerOct, *gamma, *tuningFreq, *tunerStatus);
+    cqt = new CQTThread (sampleRate, *fMin, *nOctaves, *bPerOct, *gamma);
 
     // Initialize the audio-to-MIDI translator on the CQT thread's dedicated MIDI
     // spectrum queue. Bin spacing (bins per semitone) derives from bPerOct.
@@ -228,14 +224,9 @@ void CqtanalyzerAudioProcessor::parameterChanged (const juce::String &parameterI
 {
     DBG ("Parameter with ID " << parameterID << " has changed. New value: " << newValue);
     
-    auto retainedCqt = cqt;
     auto retainedMidi = midiTranslator;
 
-    if ((parameterID == "tuningFreq")&&(retainedCqt != nullptr))
-        retainedCqt->setTuningFreq (newValue);
-    else if ((parameterID == "tunerStatus")&&(retainedCqt != nullptr))
-        retainedCqt->setTunerStatus (newValue);
-    else if ((parameterID == "midiThreshold")&&(retainedMidi != nullptr))
+    if ((parameterID == "midiThreshold")&&(retainedMidi != nullptr))
         retainedMidi->setThreshold (newValue);
     else if ((parameterID == "midiChannel")&&(retainedMidi != nullptr))
         retainedMidi->setMidiChannel (static_cast<int> (newValue));
@@ -254,7 +245,7 @@ void CqtanalyzerAudioProcessor::timerCallback()
 {
     // The CQT thread is rebuilt, so a fresh reference to its dedicated MIDI FIFO
     // is needed for the translator as well.
-    cqt = new CQTThread (getSamplerate(), *fMin, *nOctaves, *bPerOct, *gamma, *tuningFreq, *tunerStatus);
+    cqt = new CQTThread (getSamplerate(), *fMin, *nOctaves, *bPerOct, *gamma);
 
     auto retainedCqt = cqt;
     midiTranslator = new MidiTranslator (retainedCqt->getMidiFifo(),
@@ -293,9 +284,6 @@ std::vector<std::unique_ptr<juce::RangedAudioParameter>> CqtanalyzerAudioProcess
                                                                        juce::NormalisableRange<float> (-35.0f, 35.0f, 0.1f), 0.0f,
                                                                        [](float value) {return juce::String (value);}, nullptr));
     
-    params.push_back (OSCParameterInterface::createParameterTheOldWay ("tuningFreq", "Tuning Frequency ", "Hz",
-                                                                       juce::NormalisableRange<float> (432.0f, 448.0f, 1.0f), 440.0f,
-                                                                       [](float value) {return juce::String (value);}, nullptr));
     
     params.push_back (OSCParameterInterface::createParameterTheOldWay ("dBScale", "dB Scale ", "",
                                                                        juce::NormalisableRange<float> (0.0f, 1.0f, 1.0f), 0.0f,
@@ -309,13 +297,6 @@ std::vector<std::unique_ptr<juce::RangedAudioParameter>> CqtanalyzerAudioProcess
                                                                        juce::NormalisableRange<float> (10.0f, 80.0f, 1.f), 40.0,
                                                                        [](float value) {return juce::String (value, 0);}, nullptr));
     
-    params.push_back (OSCParameterInterface::createParameterTheOldWay ("tunerStatus", "Tuner ", "",
-                                                                       juce::NormalisableRange<float> (0.0f, 1.0f, 1.0f), 1.0f,
-                                                                       [](float value)
-                                                                       {
-                                                                            if (value >= 0.5f ) return "on";
-                                                                            else return "off";
-                                                                       }, nullptr));
     
     params.push_back (OSCParameterInterface::createParameterTheOldWay ("midiThreshold", "MIDI Threshold ", "", 
                                                                        juce::NormalisableRange<float> (0.0f, 1.0f, 0.001f), 0.05f,

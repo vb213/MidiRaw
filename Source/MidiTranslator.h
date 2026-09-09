@@ -48,6 +48,16 @@ public:
     static constexpr int numMidiNotes = 128;
     static constexpr int maxEventsInQueue = 512;
 
+    /** Number of strongest harmonic fits that are forwarded to the MIDI output.
+        All other active notes are treated as overtones of some fundamental and
+        are suppressed (i.e. they do not produce their own note-on / note-off). */
+    static constexpr int maxDetectedPitches = 6;
+
+    /** Default number of overtones examined per fundamental (the "N" in the
+        harmonic-fit sum). The fundamental's own frequency is never counted; only
+        the harmonics 2f .. (N+1)f contribute to its fit. */
+    static constexpr int defaultMaxOvertone = 5;
+
     using Ptr = juce::ReferenceCountedObjectPtr<MidiTranslator>;
 
     /** Creates the translator and starts its thread.
@@ -89,6 +99,21 @@ public:
     int getMinMidiNote() const                    { return minNote.load(); }
     int getMaxMidiNote() const                    { return maxNote.load(); }
 
+    /** Sets the number of overtones N examined per fundamental in the harmonic
+        fit. Only the harmonics 2f .. (N+1)f contribute; the fundamental's own
+        frequency is never counted. Newly added weights default to 1.0.
+        @param n the overtone order (must be >= 1). */
+    void setMaxOvertone (int n);
+
+    /** Replaces the overtone weight ("sound profile") used in the harmonic fit.
+        The i-th entry is the weight w_i applied to the measured strength of the
+        (i+1)-th harmonic of a candidate fundamental. The vector length is kept in
+        sync with the number of overtones; entries are not normalised.
+        @param weights the per-overtone weights, starting at the 2nd harmonic. */
+    void setOvertoneWeights (const std::vector<float>& weights);
+
+    int getMaxOvertone() const { return maxOvertone; }
+
     //==============================================================================
     /** Called from the audio thread (processBlock). Drains all pending note
         messages into the given MidiBuffer so they are sent out of the plugin.
@@ -105,6 +130,19 @@ private:
 
     /** Turns a popped CQT buffer into note-on / note-off events. */
     void processSpectrum (const float* spectrum, int numBins);
+
+    /** Computes the harmonic fit of a candidate fundamental using the measured
+        strength of its overtones 2f .. (N+1)f. The fundamental's own strength is
+        intentionally not part of the fit (it only gates whether the note is a
+        candidate at all). Out-of-range overtones contribute a presence of zero.
+        @param note the candidate's MIDI note.
+        @param presence per-note measured strength (frame peaks).
+        @param numOvertones the overtone order N (>= 1, 2f .. (N+1)f).
+        @param weights the per-overtone weights, starting at the 2nd harmonic. */
+    float computeHarmonicFit (int note,
+                              const std::vector<float>& presence,
+                              int numOvertones,
+                              const std::vector<float>& weights) const;
 
     /** Enqueues a MIDI message for delivery on the audio thread. */
     void enqueueMessage (const juce::MidiMessage& message);
@@ -131,6 +169,14 @@ private:
     std::atomic<int> midiChannel;
     std::atomic<int> minNote;
     std::atomic<int> maxNote;
+
+    // Pitch-detection configuration (the "sound profile"). maxOvertone and the
+    // overtoneWeights vector are mutated by the setters on the GUI thread and read
+    // by processSpectrum() on the MIDI worker thread, so they are guarded by the
+    // same lock. The worker takes a snapshot under the lock before using them.
+    mutable juce::CriticalSection configLock;
+    int maxOvertone;
+    std::vector<float> overtoneWeights;
 
     // Event ring buffer handed to the audio thread on demand.
     juce::AbstractFifo eventFifo;

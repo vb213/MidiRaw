@@ -22,13 +22,11 @@
 
 #include "CQTThread.h"
 
-CQTThread::Params::Params (const double fs, const float fMin, const float nOctaves, const float B, const float gamma, const float tuningFreq) : gammaParam (gamma)
+CQTThread::Params::Params (const double fs, const float fMin, const float nOctaves, const float B, const float gamma)
 {
     sampleRate = fs;
     bandwidth_max = 0.0f;
     gainFactor = (nOctaves * nOctaves * nOctaves)/10;  // empirical, can surely be improved
-    tuning = tuningFreq;
-    nearestBinToTuning = 0;
 
     const double Q = 1.0 / (exp2 (1.0 / B) - exp2 (-1.0 / B));
     const double alpha = 1 / Q;
@@ -38,7 +36,6 @@ CQTThread::Params::Params (const double fs, const float fMin, const float nOctav
     const double fMax = juce::jmin (fs / 2 / m, fMin * pow (2, nOctaves));
 
     K = static_cast<unsigned int> (juce::roundToInt (std::floor (std::log2 (fMax / fMin) * B)));
-    binsPerSemitone = static_cast<unsigned int> (B / 12.0);
     
 
     int Nk = 0;  // current number of samples for each frequencybin
@@ -87,9 +84,9 @@ CQTThread::Params::Params (const double fs, const float fMin, const float nOctav
 }
 
 
-CQTThread::CQTThread (const double fs, const float fMin, const float nOctaves, const float B, const float gamma, const float tuningFreq, const float initialTunerStatus) :
+CQTThread::CQTThread (const double fs, const float fMin, const float nOctaves, const float B, const float gamma) :
 Thread ("CQT Thread"),
-params (fs, fMin, nOctaves, B, gamma, tuningFreq),
+    params (fs, fMin, nOctaves, B, gamma),
 audioBufferFifo (params.blockLength, numberOfBuffersInQueue),
 collector (audioBufferFifo, params.overlap), // second params is overlap (in samples)
 fft (params.fftOrder),
@@ -106,9 +103,6 @@ cqtFifo (static_cast<int>(params.K), numberOfBuffersInCQTQueue),
 
     cqtCollectorBuffer.resize (params.K);
     
-    setTuningFreq(tuningFreq);
-    integratedTuning = tuningFreq;
-    tunerStatus = static_cast<bool>(initialTunerStatus);
     
     computeWindows();
 
@@ -232,7 +226,6 @@ void CQTThread::run()
                     cqtBuffer.addSample(static_cast<int>(k), ii, float(params.fftSize / params.ifftSize * params.gainFactor * std::abs(ifftOutData.data()[ii])));
             }
             
-            bool activationIdx = 0;
             
             // Setting samples and pushing into cqt-visualizer-FIFO
             for (int ii = 0; ii < params.hopsize; ii++)
@@ -241,8 +234,6 @@ void CQTThread::run()
                 {
                     cqtCollectorBuffer[cqtCollectorBuffer.size() - k - 1] = cqtBuffer.getSample (static_cast<int>(k), ii);
 
-                    if ((cqtCollectorBuffer[cqtCollectorBuffer.size() - k - 1] > 0.1) && params.binsPerSemitone > 2)
-                        activationIdx = true;
                 }
 
                 cqtFifo.push (cqtCollectorBuffer.data(), static_cast<int>(params.K));
@@ -260,104 +251,10 @@ void CQTThread::run()
                 for (int k = 0; k < static_cast<int>(params.K); ++k)
                     cqtBuffer.setSample (k, ii, 0.0f);
 
-            // Start tuner
-            if ((activationIdx == true) && (params.gammaParam < gammaTh) && (tunerStatus == true))
-                calculateTuning();
         }
     }
 }
 
 
-void CQTThread::setTuningFreq (const float newTuning)
-{
-    params.tuning = newTuning;
-    
-    float minOffset = 100.0f;
-    for (unsigned int k = 0; k < params.K; k++){
-        if (fabs (params.frequencies[k] - params.tuning) < minOffset)
-        {
-            params.nearestBinToTuning = k;
-            minOffset = fabs (params.frequencies[k] - params.tuning);
-        }
-    }
-}
 
 
-void CQTThread::calculateTuning()
-{
-    ++tuningIterationCounter;
-    std::reverse(cqtCollectorBuffer.begin(), cqtCollectorBuffer.end());
-    
-    // start from here if maximum isnt at the tuning-bin
-    startTuning:
-
-    
-    // safety if tuning bin is shifted so often that it is out of bounds
-    if ((params.nearestBinToTuning < 2) || ((params.nearestBinToTuning-1) == params.K))
-        setTuningFreq (params.tuning);
-    
-    unsigned int modTuning = params.nearestBinToTuning % params.binsPerSemitone;
-    
-    
-    std::vector<float> summedCqt (3, 0.0f);
-
-    
-    for (unsigned int ii = 0; ii < params.K; ++ii)
-    {
-        // summed at tuning bin
-        if (ii % params.binsPerSemitone == modTuning){
-            summedCqt[1] += cqtCollectorBuffer[ii];
-        }
-        
-        // summed above tuning bin
-        if ((ii % params.binsPerSemitone) == ((modTuning + 1) % params.binsPerSemitone)){
-            summedCqt[2] += cqtCollectorBuffer[ii];
-        }
-
-        // summed below tuning-bin
-        if ((ii % params.binsPerSemitone) == ((modTuning - 1 + params.binsPerSemitone) % params.binsPerSemitone)){
-            summedCqt[0] += cqtCollectorBuffer[ii];
-        }
-    }
-    
-    // shifting tuning-center if above or below the next bin
-    if (summedCqt[0] > summedCqt[1])
-    {
-        params.nearestBinToTuning -= 1;
-        goto startTuning;
-    }
-    else if (summedCqt[2] > summedCqt[1])
-    {
-        params.nearestBinToTuning += 1;
-        goto startTuning;
-    }
-
-    // saving frequencies for more compact calculation
-    float a = params.frequencies[params.nearestBinToTuning - 1];
-    float b = params.frequencies[params.nearestBinToTuning];
-    float c = params.frequencies[params.nearestBinToTuning + 1];
-    
-    // actual calculation based upon parabolic interpolation
-    float newTuning = float(b + 0.5 * ((summedCqt[0] - summedCqt[1]) * pow((c - b), 2) -
-                                       (summedCqt[2] - summedCqt[1]) * pow((b - a), 2))/
-                                      ((summedCqt[0] - summedCqt[1]) * (c - b) +
-                                       (summedCqt[2] - summedCqt[1]) * (b - a)));
-    
-    // some sort of integration to smoothen the results
-    if (tuningIterationCounter > maxTuningCounter)
-        tuningIterationCounter = maxTuningCounter;
-    
-    integratedTuning = newTuning/tuningIterationCounter + integratedTuning * (tuningIterationCounter - 1)/tuningIterationCounter;
-
-    // conversion to cent
-    detuningCents = 1200 * log2 (integratedTuning/params.tuning);
-
-    // Modulo, so the solution is in the range of +- 100
-    detuningCents = static_cast<float> (juce::roundToInt (detuningCents) % 100);
-    
-    // Limiting to +-50
-    if (detuningCents > 50.0f)
-        detuningCents -= 100.0f;
-    else if (detuningCents < -50.0f)
-        detuningCents += 100.0f;
-}

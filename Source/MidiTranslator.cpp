@@ -20,6 +20,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <utility>
 
 MidiTranslator::MidiTranslator (BufferQueue<float>& fifo,
                                 const double sr,
@@ -35,6 +36,7 @@ MidiTranslator::MidiTranslator (BufferQueue<float>& fifo,
       maxNote (numMidiNotes - 1),
       eventFifo (maxEventsInQueue),
       forceAllNotesOff (false),
+      maxOvertone (defaultMaxOvertone),
       sampleRate (sr)
 {
     // Build the per-index frequency table. The CQT thread pushes its bins in

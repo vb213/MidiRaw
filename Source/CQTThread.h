@@ -42,7 +42,7 @@ class CQTThread  :  public juce::ReferenceCountedObject, public juce::Thread
      */
     struct Params
     {
-        Params (const double fs, const float fMin, const float nOctaves, const float B, const float gamma, const float tuningFreq);
+        Params (const double fs, const float fMin, const float nOctaves, const float B, const float gamma);
         static constexpr int fftOversampling = 2;
         double sampleRate;
         int fftOrder, fftSize;
@@ -56,10 +56,6 @@ class CQTThread  :  public juce::ReferenceCountedObject, public juce::Thread
         double bandwidth_max;
         double gainFactor;
         int overlap;
-        unsigned int binsPerSemitone;
-        unsigned int nearestBinToTuning;
-        float tuning;
-        const float gammaParam;
         
     };
 
@@ -78,7 +74,7 @@ public:
 
     using Ptr = juce::ReferenceCountedObjectPtr<CQTThread>;
 
-    CQTThread (const double fs, const float fMin, const float nOctaves, const float B, const float gamma, const float tuningFreq, const float initialTunerStatus);
+    CQTThread (const double fs, const float fMin, const float nOctaves, const float B, const float gamma);
     ~CQTThread() override;
 
     /** Writes samples into queue, which will be processed once enough samples are gathered.
@@ -95,11 +91,7 @@ public:
      */
     BufferQueue<float>& getMidiFifo() { return midiFifo; }
     
-    void setTuningFreq (const float newTuning);
-    void setTunerStatus (const float newTunerStatus) { tunerStatus = bool (newTunerStatus); }
-    
-    
-    float& getTuning() { return detuningCents; }
+
 
 private:
 
@@ -110,8 +102,6 @@ private:
     /** That's the thread's main routine.
      */
     void run() override;
-    
-    void calculateTuning();
 
     Params params;
 
@@ -130,15 +120,6 @@ private:
     
     std::vector<float> hannWindowForTimedomain;
 
-    float integratedTuning;
-    float detuningCents = 0.0f;
-    
-    int tuningIterationCounter = 0;
-    const int maxTuningCounter = 256;
-    bool tunerStatus;
-    
-    const float gammaTh = 10.0f;
-    
     juce::AudioBuffer<float> cqtBuffer;
     std::vector<float> cqtCollectorBuffer;
     BufferQueue<float> cqtFifo;
