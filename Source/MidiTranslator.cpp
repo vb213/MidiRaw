@@ -23,6 +23,8 @@
 #include <map>
 #include <utility>
 
+#include "Utilities/DebugLogger.h"
+
 MidiTranslator::MidiTranslator(BufferQueue<float> &fifo,
                                const double sr,
                                const float initialThreshold,
@@ -162,7 +164,7 @@ void MidiTranslator::processSpectrum(const float *spectrum, int numBins)
     }
 }
 
-std::vector<bool> applyPitchDetectionFilter(std::vector<bool> activePitches)
+std::vector<bool> MidiTranslator::applyPitchDetectionFilter(std::vector<bool> activePitches)
 {
     const int numOvertones = 2;
     std::vector<std::pair<int, float>> scores{};
@@ -174,7 +176,8 @@ std::vector<bool> applyPitchDetectionFilter(std::vector<bool> activePitches)
         float score = 0.0;
         for (int i = 0; i < numOvertones; i++)
         {
-            if (activePitches[note + overtonePattern[i]])
+            int overtoneIndex = note + overtonePattern[i];
+            if (overtoneIndex < activePitches.size() && activePitches[overtoneIndex])
             {
                 score += overtoneProfile[i];
             }

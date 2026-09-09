@@ -128,8 +128,14 @@ CqtanalyzerAudioProcessorEditor::CqtanalyzerAudioProcessorEditor(CqtanalyzerAudi
     // Visualizer
     addAndMakeVisible(cqtVisualizer);
 
+    // Debug message panel
+    addAndMakeVisible(debugPanel);
+
     // start timer after everything is set up properly
     startTimer(25);
+
+    // log a startup message so the debug panel shows some content
+    debugPrint ("CQT Analyzer GUI initialised at " + juce::String (samplerate) + " Hz");
 }
 
 CqtanalyzerAudioProcessorEditor::~CqtanalyzerAudioProcessorEditor()
@@ -161,6 +167,12 @@ void CqtanalyzerAudioProcessorEditor::resized()
     area.removeFromTop(10);
     area.removeFromBottom(5);
     // =========== END: header and footer =================
+
+    // Reserve a fixed strip at the bottom (above the footer) for the debug
+    // message panel, so it always stays visible regardless of window size.
+    juce::Rectangle<int> debugArea = area.removeFromBottom(debugPanelHeight);
+    debugPanel.setBounds(debugArea);
+    area.removeFromBottom(5);
 
     // Sorting all Sliders and Labels in flexboxes for responsive design
     juce::FlexBox flexboxUI;
@@ -255,12 +267,14 @@ void CqtanalyzerAudioProcessorEditor::sliderValueChanged(juce::Slider *slider)
 void CqtanalyzerAudioProcessorEditor::sliderDragStarted(juce::Slider *slider)
 {
     DBG("Slider drag started");
+    debugPrint ("Slider drag started: " + slider->getName());
     audioProcessor.setSliderDrag(true);
 }
 
 void CqtanalyzerAudioProcessorEditor::sliderDragEnded(juce::Slider *slider)
 {
     DBG("Slider drag ended");
+    debugPrint ("Slider drag ended: " + slider->getName());
     audioProcessor.setSliderDrag(false);
 
     if (slider == &slFMin)

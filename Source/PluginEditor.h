@@ -32,6 +32,7 @@
 //Custom Components
 #include "../resources/customComponents/ReverseSlider.h"
 #include "../resources/customComponents/SimpleLabel.h"
+#include "../resources/customComponents/DebugPanel.h"
 #include "CQTVisualizer.h"
 
 
@@ -84,7 +85,10 @@ private:
     // Attachments to create a connection between IOWidgets comboboxes
     // and the associated parameters
     CQTVisualizer cqtVisualizer;
-    
+
+    // Debug message panel shown as a fixed strip at the bottom of the GUI
+    DebugPanel debugPanel;
+
     double samplerate;
     
     
@@ -100,6 +104,9 @@ private:
     
     const int sliderSize = 70;
     const int labelOffset = 20;
+
+    // Height of the fixed debug message strip at the bottom of the GUI
+    const int debugPanelHeight = 110;
     
     // For frequency labels of visualizer
     const int freqScaleWidth = 30;

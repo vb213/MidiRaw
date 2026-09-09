@@ -42,7 +42,7 @@
   queue member, keep a retained copy of the pointer, so the object won't be
   deleted while the worker thread is still alive.
  */
-class MidiTranslator  :  public juce::ReferenceCountedObject, public juce::Thread
+class MidiTranslator : public juce::ReferenceCountedObject, public juce::Thread
 {
 public:
     static constexpr int numMidiNotes = 128;
@@ -70,47 +70,47 @@ public:
         @param binsPerSemitone the number of CQT bins per MIDI semitone
         (equal to CQTThread's B / 12). Used to derive the geometric bin spacing.
      */
-    MidiTranslator (BufferQueue<float>& midiFifo,
-                    const double sampleRate,
-                    const float threshold,
-                    const int midiChannel,
-                    const float fMin,
-                    const unsigned int binsPerSemitone);
+    MidiTranslator(BufferQueue<float> &midiFifo,
+                   const double sampleRate,
+                   const float threshold,
+                   const int midiChannel,
+                   const float fMin,
+                   const unsigned int binsPerSemitone);
     ~MidiTranslator() override;
 
     //==============================================================================
     /** Runtime-adjustable configuration. Can be called from any thread. */
-    void setThreshold (float newThreshold)        { threshold.store (newThreshold); }
-    float getThreshold() const                    { return threshold.load(); }
+    void setThreshold(float newThreshold) { threshold.store(newThreshold); }
+    float getThreshold() const { return threshold.load(); }
 
-    void setMidiChannel (int newChannel)
+    void setMidiChannel(int newChannel)
     {
-        const int clamped = juce::jlimit (1, 16, newChannel);
-        midiChannel.store (clamped);
+        const int clamped = juce::jlimit(1, 16, newChannel);
+        midiChannel.store(clamped);
     }
-    int getMidiChannel() const                    { return midiChannel.load(); }
+    int getMidiChannel() const { return midiChannel.load(); }
 
     /** Optional active-note range limiting (inclusive, 0 .. 127). */
-    void setMidiNoteRange (int newMinNote, int newMaxNote)
+    void setMidiNoteRange(int newMinNote, int newMaxNote)
     {
-        minNote.store (juce::jlimit (0, numMidiNotes - 1, newMinNote));
-        maxNote.store (juce::jlimit (0, numMidiNotes - 1, newMaxNote));
+        minNote.store(juce::jlimit(0, numMidiNotes - 1, newMinNote));
+        maxNote.store(juce::jlimit(0, numMidiNotes - 1, newMaxNote));
     }
-    int getMinMidiNote() const                    { return minNote.load(); }
-    int getMaxMidiNote() const                    { return maxNote.load(); }
+    int getMinMidiNote() const { return minNote.load(); }
+    int getMaxMidiNote() const { return maxNote.load(); }
 
     /** Sets the number of overtones N examined per fundamental in the harmonic
         fit. Only the harmonics 2f .. (N+1)f contribute; the fundamental's own
         frequency is never counted. Newly added weights default to 1.0.
         @param n the overtone order (must be >= 1). */
-    void setMaxOvertone (int n);
+    void setMaxOvertone(int n);
 
     /** Replaces the overtone weight ("sound profile") used in the harmonic fit.
         The i-th entry is the weight w_i applied to the measured strength of the
         (i+1)-th harmonic of a candidate fundamental. The vector length is kept in
         sync with the number of overtones; entries are not normalised.
         @param weights the per-overtone weights, starting at the 2nd harmonic. */
-    void setOvertoneWeights (const std::vector<float>& weights);
+    void setOvertoneWeights(const std::vector<float> &weights);
 
     int getMaxOvertone() const { return maxOvertone; }
 
@@ -118,7 +118,7 @@ public:
     /** Called from the audio thread (processBlock). Drains all pending note
         messages into the given MidiBuffer so they are sent out of the plugin.
      */
-    void drainMidiEvents (juce::MidiBuffer& midiMessages);
+    void drainMidiEvents(juce::MidiBuffer &midiMessages);
 
     /** Let the worker loop know that the spectrum producer has (re)started, so
         any notes that are still flagged as active are send a note-off. */
@@ -129,7 +129,7 @@ private:
     void run() override;
 
     /** Turns a popped CQT buffer into note-on / note-off events. */
-    void processSpectrum (const float* spectrum, int numBins);
+    void processSpectrum(const float *spectrum, int numBins);
 
     /** Computes the harmonic fit of a candidate fundamental using the measured
         strength of its overtones 2f .. (N+1)f. The fundamental's own strength is
@@ -139,19 +139,21 @@ private:
         @param presence per-note measured strength (frame peaks).
         @param numOvertones the overtone order N (>= 1, 2f .. (N+1)f).
         @param weights the per-overtone weights, starting at the 2nd harmonic. */
-    float computeHarmonicFit (int note,
-                              const std::vector<float>& presence,
-                              int numOvertones,
-                              const std::vector<float>& weights) const;
+    float computeHarmonicFit(int note,
+                             const std::vector<float> &presence,
+                             int numOvertones,
+                             const std::vector<float> &weights) const;
 
     /** Enqueues a MIDI message for delivery on the audio thread. */
-    void enqueueMessage (const juce::MidiMessage& message);
+    void enqueueMessage(const juce::MidiMessage &message);
 
     /** Sends note-offs for every note that is currently flagged as active. */
     void sendAllNotesOff();
 
+    std::vector<bool> applyPitchDetectionFilter(std::vector<bool> activePitches);
+
     //==============================================================================
-    BufferQueue<float>& midiFifo;
+    BufferQueue<float> &midiFifo;
 
     // Frequency of the spectrum bin at popped-buffer index i. The CQT thread
     // pushes its bins in reversed order, so this vector is pre-reversed from the
@@ -180,11 +182,11 @@ private:
 
     // Event ring buffer handed to the audio thread on demand.
     juce::AbstractFifo eventFifo;
-    std::vector<juce::MidiMessage*> eventBuffer;
+    std::vector<juce::MidiMessage *> eventBuffer;
 
     std::atomic<bool> forceAllNotesOff;
 
     double sampleRate;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MidiTranslator)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MidiTranslator)
 };

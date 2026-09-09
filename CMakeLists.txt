@@ -168,6 +168,7 @@ set(SourceFiles
     Source/MidiTranslator.cpp
 
     Source/Utilities/BufferQueue.h
+    Source/Utilities/DebugLogger.h
     Source/Utilities/OverlappingSampleCollector.h
     Source/Utilities/Parula.h)
 
