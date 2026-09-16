@@ -30,7 +30,7 @@ CqtanalyzerAudioProcessorEditor::CqtanalyzerAudioProcessorEditor(CqtanalyzerAudi
     // ============== BEGIN: essentials ======================
     // set GUI size and lookAndFeel
     // setSize(500, 300); // use this to create a fixed-size GUI
-    setResizeLimits(650, 500, 1200, 1000); // use this to create a resizable GUI
+    setResizeLimits(900, 700, 1200, 1000); // use this to create a resizable GUI
     setLookAndFeel(&globalLaF);
 
     samplerate = p.getSampleRate();
@@ -121,6 +121,39 @@ CqtanalyzerAudioProcessorEditor::CqtanalyzerAudioProcessorEditor(CqtanalyzerAudi
     addChildComponent(lbDynamicRange);
     lbDynamicRange.setJustification(juce::Justification::centred);
     lbDynamicRange.setText("Range", juce::dontSendNotification);
+
+    // ---- Overtone / score-threshold control group (right side of the UI) ----
+    // Score threshold slider
+    addAndMakeVisible(slScoreThreshold);
+    slScoreThreshold.setSliderStyle(juce::Slider::LinearVertical);
+    slScoreThreshold.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 12);
+    slScoreThreshold.setColour(juce::Slider::thumbColourId, globalLaF.ClWidgetColours[3]);
+    slScoreThreshold.setRange(0.0, 1.0, 0.001);
+    slScoreThresholdAttachment.reset(new SliderAttachment(valueTreeState, "scoreThreshold", slScoreThreshold));
+    slScoreThreshold.addListener(this);
+    slScoreThreshold.setName("scoreThreshold");
+
+    addAndMakeVisible(lbScoreThreshold);
+    lbScoreThreshold.setJustification(juce::Justification::centred);
+    lbScoreThreshold.setText("Thresh", juce::dontSendNotification);
+
+    // Per-overtone profile sliders
+    static const char *const overtoneNames[MidiTranslator::numOvertoneProfileEntries] = {"OV1", "OV2", "OV3", "OV4", "OV5"};
+    for (int i = 0; i < MidiTranslator::numOvertoneProfileEntries; ++i)
+    {
+        addAndMakeVisible(slOvertone[static_cast<size_t>(i)]);
+        slOvertone[static_cast<size_t>(i)].setSliderStyle(juce::Slider::LinearVertical);
+        slOvertone[static_cast<size_t>(i)].setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 12);
+        slOvertone[static_cast<size_t>(i)].setColour(juce::Slider::thumbColourId, globalLaF.ClWidgetColours[3]);
+        slOvertone[static_cast<size_t>(i)].setRange(0.0, 1.0, 0.001);
+        slOvertone[static_cast<size_t>(i)].addListener(this);
+        slOvertone[static_cast<size_t>(i)].setName(juce::String("overtone") + juce::String(i));
+        slOvertoneAttachment[static_cast<size_t>(i)].reset(new SliderAttachment(valueTreeState, juce::String("overtone") + juce::String(i), slOvertone[static_cast<size_t>(i)]));
+
+        addAndMakeVisible(lbOvertone[static_cast<size_t>(i)]);
+        lbOvertone[static_cast<size_t>(i)].setJustification(juce::Justification::centred);
+        lbOvertone[static_cast<size_t>(i)].setText(overtoneNames[i], juce::dontSendNotification);
+    }
 
     // This is needed for correct scale when reopening UI
     generateScale(slNOctaves.getValue(), slBPerOct.getValue(), slFMin.getValue());
@@ -214,6 +247,44 @@ void CqtanalyzerAudioProcessorEditor::resized()
     area.removeFromBottom(sliderSize + labelOffset + 5);
 
     // UI control
+    // The overtone score group lives on the far right, with the gain column
+    // immediately to its left.
+    const int overtoneGridCols = 3;
+    const int overtoneGridRows = 2;
+    const int overtoneGridGapH = 6;
+    const int overtoneGridGapV = 8;
+    const int overtoneLabelH = 12;
+    const int overtonePanelWidth = overtoneGridCols * 50 + (overtoneGridCols - 1) * overtoneGridGapH;
+
+    // First remove the far-right region for the overtone group.
+    juce::Rectangle<int> OvertoneArea = area.removeFromRight(overtonePanelWidth);
+
+    // Lay the six sliders out as a compact grid (threshold first, then the five
+    // overtone profile sliders).
+    const int overtoneCellW = (OvertoneArea.getWidth() - (overtoneGridCols - 1) * overtoneGridGapH) / overtoneGridCols;
+    const int overtoneCellH = (OvertoneArea.getHeight() - (overtoneGridRows - 1) * overtoneGridGapV) / overtoneGridRows;
+
+    for (int i = 0; i < MidiTranslator::numOvertoneProfileEntries + 1; ++i)
+    {
+        const int col = i % overtoneGridCols;
+        const int row = i / overtoneGridCols;
+
+        juce::Rectangle<int> cell(OvertoneArea.getX() + col * (overtoneCellW + overtoneGridGapH),
+                                  OvertoneArea.getY() + row * (overtoneCellH + overtoneGridGapV),
+                                  overtoneCellW, overtoneCellH);
+
+        juce::Slider &sliderRef = (i == 0) ? slScoreThreshold : slOvertone[static_cast<size_t>(i - 1)];
+        SimpleLabel &labelRef = (i == 0) ? lbScoreThreshold : lbOvertone[static_cast<size_t>(i - 1)];
+
+        labelRef.setBounds(cell.removeFromTop(overtoneLabelH));
+        sliderRef.setBounds(cell);
+    }
+
+    // Small gap between the overtone group and the gain column.
+    area.removeFromRight(6);
+
+    // Now the existing gain column (dB-scale toggle, gain, range), right of the
+    // overtone group.
     juce::Rectangle<int> GainArea = area.removeFromRight(juce::roundToInt(sliderSize * 0.7f));
     slDBScale.setBounds(GainArea.removeFromTop(40));
 

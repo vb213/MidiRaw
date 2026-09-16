@@ -68,6 +68,13 @@ MidiTranslator::MidiTranslator(BufferQueue<float> &fifo,
     for (auto *&slot : eventBuffer)
         slot = new juce::MidiMessage();
 
+    // Initial pitch-detection tuning. These are read by the worker thread but
+    // written from the GUI thread, so they are initialised here before the
+    // thread starts.
+    scoreThreshold.store(0.5f);
+    for (auto &weight : overtoneProfile)
+        weight.store(0.2f);
+
     startThread(6);
 }
 
@@ -166,11 +173,30 @@ void MidiTranslator::processSpectrum(const float *spectrum, int numBins)
 
 std::vector<bool> MidiTranslator::applyPitchDetectionFilter(std::vector<bool> activePitches)
 {
-    const int numOvertones = 5;
+    const int numOvertones = numOvertoneProfileEntries;
     std::vector<std::pair<int, float>> scores{};
     const int overtonePattern[numOvertones] = {12, 19, 24, 28, 31};
-    float overtoneProfile[numOvertones] = {0.2, 0.2, 0.2, 0.2, 0.2};
-    float scoreThreshhold = 0.5;
+
+    // Read the GUI-tunable sound profile. The per-overtone weights are normalised
+    // here so they always sum to one, regardless of the raw slider values.
+    const float scoreThreshhold = scoreThreshold.load();
+    float rawProfile[numOvertones];
+    float profileSum = 0.0f;
+    for (int i = 0; i < numOvertones; i++)
+    {
+        rawProfile[i] = overtoneProfile[static_cast<size_t>(i)].load();
+        profileSum += rawProfile[i];
+    }
+    if (profileSum <= 0.0f)
+    {
+        // Avoid division by zero: fall back to equal weights.
+        profileSum = static_cast<float>(numOvertones);
+        for (int i = 0; i < numOvertones; i++)
+            rawProfile[i] = 1.0f;
+    }
+    float overtoneProfile[numOvertones];
+    for (int i = 0; i < numOvertones; i++)
+        overtoneProfile[i] = rawProfile[i] / profileSum;
 
     for (int note = 0; note < activePitches.size(); note++)
     {

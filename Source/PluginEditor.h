@@ -25,6 +25,8 @@
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
 
+#include <array>
+
 //Plugin Design Essentials
 #include "../resources/lookAndFeel/IEM_LaF.h"
 #include "../resources/customComponents/TitleBar.h"
@@ -100,6 +102,15 @@ private:
     juce::Slider slFMin, slNOctaves, slBPerOct, slGamma, slGain, slDynamicRange, slDBScale;
     
     std::unique_ptr<SliderAttachment> slFMinAttachment, slNOctavesAttachment, slBPerOctAttachment, slGammaAttachment, slGainAttachment, slDynamicRangeAttachment, slDBScaleAttachment;
+    
+    
+    // Overtone / score-threshold control group placed on the right side of the UI.
+    juce::Slider slScoreThreshold;
+    std::array<juce::Slider, MidiTranslator::numOvertoneProfileEntries> slOvertone;
+    std::array<std::unique_ptr<SliderAttachment>, MidiTranslator::numOvertoneProfileEntries> slOvertoneAttachment;
+    std::unique_ptr<SliderAttachment> slScoreThresholdAttachment;
+    SimpleLabel lbScoreThreshold;
+    std::array<SimpleLabel, MidiTranslator::numOvertoneProfileEntries> lbOvertone;
     
     
     SimpleLabel lbFMin, lbNOctaves, lbBPerOct, lbGamma, lbGain, lbDynamicRange;

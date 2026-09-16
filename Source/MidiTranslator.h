@@ -58,6 +58,11 @@ public:
         the harmonics 2f .. (N+1)f contribute to its fit. */
     static constexpr int defaultMaxOvertone = 5;
 
+    /** Number of per-overtone weights in the overtone "sound profile" tuned by
+        the GUI. Each entry weights the strength of one harmonic of a candidate
+        fundamental (see applyPitchDetectionFilter()). */
+    static constexpr int numOvertoneProfileEntries = 5;
+
     using Ptr = juce::ReferenceCountedObjectPtr<MidiTranslator>;
 
     /** Creates the translator and starts its thread.
@@ -113,6 +118,34 @@ public:
     void setOvertoneWeights(const std::vector<float> &weights);
 
     int getMaxOvertone() const { return maxOvertone; }
+
+    /** Sets the score threshold used by applyPitchDetectionFilter(). A candidate
+        fundamental is only forwarded if its (normalised) harmonic-fit score
+        exceeds this value.
+        @param newScoreThreshold the threshold in [0.0, 1.0]. */
+    void setScoreThreshold(float newScoreThreshold)
+    {
+        scoreThreshold.store(juce::jlimit(0.0f, 1.0f, newScoreThreshold));
+    }
+    float getScoreThreshold() const { return scoreThreshold.load(); }
+
+    /** Sets one entry of the overtone "sound profile" used by
+        applyPitchDetectionFilter(). The weights are normalised to sum to one at
+        use time, so any non-negative value is meaningful.
+        @param index which overtone (2nd .. (N+1)-th harmonic) to weight.
+        @param value the raw weight in [0.0, 1.0]. */
+    void setOvertoneProfileEntry(int index, float value)
+    {
+        if (index < 0 || index >= numOvertoneProfileEntries)
+            return;
+        overtoneProfile[static_cast<size_t>(index)].store(juce::jlimit(0.0f, 1.0f, value));
+    }
+    float getOvertoneProfileEntry(int index) const
+    {
+        if (index < 0 || index >= numOvertoneProfileEntries)
+            return 0.0f;
+        return overtoneProfile[static_cast<size_t>(index)].load();
+    }
 
     //==============================================================================
     /** Returns the MIDI note numbers that are currently held (i.e. the notes
@@ -182,6 +215,13 @@ private:
     std::atomic<int> midiChannel;
     std::atomic<int> minNote;
     std::atomic<int> maxNote;
+
+    // Pitch-detection tuning, adjustable from the GUI / message thread while the
+    // worker reads them in applyPitchDetectionFilter(). Both are atomic so they
+    // can be written on the GUI thread and read on the MIDI worker thread without
+    // a lock. The overtone weights are normalised to sum to one at use time.
+    std::atomic<float> scoreThreshold;
+    std::array<std::atomic<float>, numOvertoneProfileEntries> overtoneProfile;
 
     // Pitch-detection configuration (the "sound profile"). maxOvertone and the
     // overtoneWeights vector are mutated by the setters on the GUI thread and read

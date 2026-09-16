@@ -27,6 +27,8 @@
 #include "CQTThread.h"
 #include "MidiTranslator.h"
 
+#include <array>
+
 #define ProcessorClass CqtanalyzerAudioProcessor
 
 //==============================================================================
@@ -92,6 +94,8 @@ private:
     std::atomic<float>* dynamicRange;
     std::atomic<float>* midiThreshold;
     std::atomic<float>* midiChannel;
+    std::atomic<float>* scoreThreshold;
+    std::array<std::atomic<float>*, MidiTranslator::numOvertoneProfileEntries> overtoneEntry;
     
     double sr;
     bool sliderDrag = false;
