@@ -25,7 +25,7 @@
 
 //==============================================================================
 CqtanalyzerAudioProcessorEditor::CqtanalyzerAudioProcessorEditor(CqtanalyzerAudioProcessor &p, juce::AudioProcessorValueTreeState &vts)
-    : AudioProcessorEditor(&p), audioProcessor(p), valueTreeState(vts), footer(p.getOSCParameterInterface()), cqtVisualizer(audioProcessor.getCQT(), vts)
+    : AudioProcessorEditor(&p), audioProcessor(p), valueTreeState(vts), footer(p.getOSCParameterInterface()), cqtVisualizer(audioProcessor.getCQT(), vts), midiNotePanel(audioProcessor.getMidiTranslator())
 {
     // ============== BEGIN: essentials ======================
     // set GUI size and lookAndFeel
@@ -131,6 +131,9 @@ CqtanalyzerAudioProcessorEditor::CqtanalyzerAudioProcessorEditor(CqtanalyzerAudi
     // Debug message panel
     addAndMakeVisible(debugPanel);
 
+    // Active MIDI notes text panel
+    addAndMakeVisible(midiNotePanel);
+
     // start timer after everything is set up properly
     startTimer(25);
 
@@ -168,8 +171,12 @@ void CqtanalyzerAudioProcessorEditor::resized()
     area.removeFromBottom(5);
     // =========== END: header and footer =================
 
-    // Reserve a fixed strip at the bottom (above the footer) for the debug
-    // message panel, so it always stays visible regardless of window size.
+    // Reserve a fixed strip at the bottom (above the footer) for the "active
+    // MIDI notes" text panel, and below that the debug message panel.
+    juce::Rectangle<int> midiNoteArea = area.removeFromBottom(midiNotePanelHeight);
+    midiNotePanel.setBounds(midiNoteArea);
+    area.removeFromBottom(5);
+
     juce::Rectangle<int> debugArea = area.removeFromBottom(debugPanelHeight);
     debugPanel.setBounds(debugArea);
     area.removeFromBottom(5);

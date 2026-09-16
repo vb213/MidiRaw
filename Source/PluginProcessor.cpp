@@ -167,7 +167,7 @@ void CqtanalyzerAudioProcessor::processBlock(juce::AudioBuffer<float> &buffer, j
     auto retainedMidi = midiTranslator;
     if (retainedMidi != nullptr)
         retainedMidi->drainMidiEvents(midiMessages);
-
+    /*
     juce::String notes;
     for (const auto metadata : midiMessages)
     {
@@ -180,6 +180,7 @@ void CqtanalyzerAudioProcessor::processBlock(juce::AudioBuffer<float> &buffer, j
     }
 
     debugPrint("Notes: " + notes);
+    */
 }
 
 //==============================================================================

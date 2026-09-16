@@ -34,6 +34,7 @@
 #include "../resources/customComponents/SimpleLabel.h"
 #include "../resources/customComponents/DebugPanel.h"
 #include "CQTVisualizer.h"
+#include "MidiNoteDisplayPanel.h"
 
 
 typedef ReverseSlider::SliderAttachment SliderAttachment; // all ReverseSliders will make use of the parameters' valueToText() function
@@ -89,6 +90,10 @@ private:
     // Debug message panel shown as a fixed strip at the bottom of the GUI
     DebugPanel debugPanel;
 
+    // Panel showing the currently active MIDI notes as text, placed just above
+    // the debug panel.
+    MidiNoteDisplayPanel midiNotePanel;
+
     double samplerate;
     
     
@@ -107,6 +112,10 @@ private:
 
     // Height of the fixed debug message strip at the bottom of the GUI
     const int debugPanelHeight = 110;
+
+    // Height of the fixed "active MIDI notes" text strip just above the debug
+    // panel
+    const int midiNotePanelHeight = 90;
     
     // For frequency labels of visualizer
     const int freqScaleWidth = 30;

@@ -169,10 +169,12 @@ std::vector<bool> MidiTranslator::applyPitchDetectionFilter(std::vector<bool> ac
     const int numOvertones = 5;
     std::vector<std::pair<int, float>> scores{};
     const int overtonePattern[numOvertones] = {12, 19, 24, 28, 31};
-    const float overtoneProfile[numOvertones] = {0.2, 0.2, 0.2, 0.2, 0.2};
+    float overtoneProfile[numOvertones] = {0.2, 0.2, 0.2, 0.2, 0.2};
+    float scoreThreshhold = 0.5;
 
     for (int note = 0; note < activePitches.size(); note++)
     {
+        // intended range of score: [0.0, 1.0]
         float score = 0.0;
         for (int i = 0; i < numOvertones; i++)
         {
@@ -200,7 +202,10 @@ std::vector<bool> MidiTranslator::applyPitchDetectionFilter(std::vector<bool> ac
     std::vector<bool> filteredActivePitches(activePitches.size());
     for (int i = 0; i < k; i++)
     {
-        filteredActivePitches[scores[i].first] = true;
+        if (scores[i].second > scoreThreshhold)
+        {
+            filteredActivePitches[scores[i].first] = true;
+        }
     }
     return filteredActivePitches;
 }
@@ -229,6 +234,21 @@ void MidiTranslator::enqueueMessage(const juce::MidiMessage &message)
     jassert(scopedWrite.blockSize1 == 1 && scopedWrite.blockSize2 == 0);
 
     *eventBuffer[static_cast<size_t>(scopedWrite.startIndex1)] = message;
+}
+
+//==============================================================================
+juce::Array<int> MidiTranslator::getActiveNotes() const
+{
+    juce::Array<int> activeNotes;
+
+    const int lowNote = minNote.load();
+    const int highNote = maxNote.load();
+
+    for (int note = lowNote; note <= highNote; ++note)
+        if (noteActive[static_cast<size_t>(note)].load())
+            activeNotes.add(note);
+
+    return activeNotes;
 }
 
 //==============================================================================

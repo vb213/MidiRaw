@@ -71,6 +71,7 @@ public:
     void timerCallback() override;
 
     CQTThread::Ptr& getCQT() { return cqt; }
+    MidiTranslator::Ptr& getMidiTranslator() { return midiTranslator; }
     double& getSamplerate() { return sr; }
     void setSliderDrag ( bool newStatus ) { sliderDrag = newStatus; }
     

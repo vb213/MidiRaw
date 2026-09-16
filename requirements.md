@@ -32,6 +32,5 @@ first test:
 - strums trigger all notes
   Next Steps:
 - highlight recognized notes in the Visualizer and write them onto GUI
-- remove tuner from UI
+
 - make latency lower through what?
-- de

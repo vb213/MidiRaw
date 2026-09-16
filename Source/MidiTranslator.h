@@ -115,6 +115,17 @@ public:
     int getMaxOvertone() const { return maxOvertone; }
 
     //==============================================================================
+    /** Returns the MIDI note numbers that are currently held (i.e. the notes
+        whose note-on was sent but whose note-off has not been sent yet).
+
+        This is exactly the set of notes that the plugin is currently putting
+        out, and is safe to call from the GUI/message thread because every
+        per-note active flag is an atomic. It is meant to be polled periodically
+        by the UI to display the active notes as text.
+     */
+    juce::Array<int> getActiveNotes() const;
+
+    //==============================================================================
     /** Called from the audio thread (processBlock). Drains all pending note
         messages into the given MidiBuffer so they are sent out of the plugin.
      */
