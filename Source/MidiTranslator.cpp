@@ -166,10 +166,10 @@ void MidiTranslator::processSpectrum(const float *spectrum, int numBins)
 
 std::vector<bool> MidiTranslator::applyPitchDetectionFilter(std::vector<bool> activePitches)
 {
-    const int numOvertones = 2;
+    const int numOvertones = 5;
     std::vector<std::pair<int, float>> scores{};
-    const int overtonePattern[numOvertones] = {12, 16};
-    const float overtoneProfile[numOvertones] = {0.5, 0.5};
+    const int overtonePattern[numOvertones] = {12, 19, 24, 28, 31};
+    const float overtoneProfile[numOvertones] = {0.2, 0.2, 0.2, 0.2, 0.2};
 
     for (int note = 0; note < activePitches.size(); note++)
     {

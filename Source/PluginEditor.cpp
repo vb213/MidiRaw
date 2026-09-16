@@ -112,7 +112,7 @@ CqtanalyzerAudioProcessorEditor::CqtanalyzerAudioProcessorEditor(CqtanalyzerAudi
 
     addAndMakeVisible(lbGamma);
     lbGamma.setJustification(juce::Justification::centred);
-    lbGamma.setText("GammaG", juce::dontSendNotification);
+    lbGamma.setText("Gamma", juce::dontSendNotification);
 
     addAndMakeVisible(lbGain);
     lbGain.setJustification(juce::Justification::centred);
@@ -135,7 +135,7 @@ CqtanalyzerAudioProcessorEditor::CqtanalyzerAudioProcessorEditor(CqtanalyzerAudi
     startTimer(25);
 
     // log a startup message so the debug panel shows some content
-    debugPrint ("CQT Analyzer GUI initialised at " + juce::String (samplerate) + " Hz");
+    debugPrint("CQT Analyzer GUI initialised at " + juce::String(samplerate) + " Hz");
 }
 
 CqtanalyzerAudioProcessorEditor::~CqtanalyzerAudioProcessorEditor()
@@ -267,14 +267,14 @@ void CqtanalyzerAudioProcessorEditor::sliderValueChanged(juce::Slider *slider)
 void CqtanalyzerAudioProcessorEditor::sliderDragStarted(juce::Slider *slider)
 {
     DBG("Slider drag started");
-    debugPrint ("Slider drag started: " + slider->getName());
+    debugPrint("Slider drag started: " + slider->getName());
     audioProcessor.setSliderDrag(true);
 }
 
 void CqtanalyzerAudioProcessorEditor::sliderDragEnded(juce::Slider *slider)
 {
     DBG("Slider drag ended");
-    debugPrint ("Slider drag ended: " + slider->getName());
+    debugPrint("Slider drag ended: " + slider->getName());
     audioProcessor.setSliderDrag(false);
 
     if (slider == &slFMin)
