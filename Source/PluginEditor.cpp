@@ -25,7 +25,7 @@
 
 //==============================================================================
 CqtanalyzerAudioProcessorEditor::CqtanalyzerAudioProcessorEditor(CqtanalyzerAudioProcessor &p, juce::AudioProcessorValueTreeState &vts)
-    : AudioProcessorEditor(&p), audioProcessor(p), valueTreeState(vts), footer(p.getOSCParameterInterface()), cqtVisualizer(audioProcessor.getCQT(), vts), midiNotePanel(audioProcessor.getMidiTranslator())
+    : AudioProcessorEditor(&p), audioProcessor(p), valueTreeState(vts), footer(p.getOSCParameterInterface()), cqtVisualizer(audioProcessor.getCQT(), vts, audioProcessor.getMidiTranslator()), midiNotePanel(audioProcessor.getMidiTranslator())
 {
     // ============== BEGIN: essentials ======================
     // set GUI size and lookAndFeel
@@ -112,7 +112,7 @@ CqtanalyzerAudioProcessorEditor::CqtanalyzerAudioProcessorEditor(CqtanalyzerAudi
 
     addAndMakeVisible(lbGamma);
     lbGamma.setJustification(juce::Justification::centred);
-    lbGamma.setText("Gamma", juce::dontSendNotification);
+    lbGamma.setText("GGGamma", juce::dontSendNotification);
 
     addAndMakeVisible(lbGain);
     lbGain.setJustification(juce::Justification::centred);

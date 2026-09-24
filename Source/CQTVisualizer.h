@@ -23,13 +23,16 @@ along with this software.  If not, see <https://www.gnu.org/licenses/>.
 #pragma once
 #include <JuceHeader.h>
 #include "CQTThread.h"
+#include "MidiTranslator.h"
 
 class CQTVisualizer : public juce::Component, private juce::Timer
 {
     static constexpr int imageWidth = 2000;
 
 public:
-    CQTVisualizer (CQTThread::Ptr& cqt, juce::AudioProcessorValueTreeState& vts);
+    CQTVisualizer (CQTThread::Ptr& cqt,
+                   juce::AudioProcessorValueTreeState& vts,
+                   MidiTranslator::Ptr& midiTranslator);
 
     void paint (juce::Graphics& g) override;
     
@@ -44,10 +47,30 @@ private:
 
     void updateData();
 
+    /** Writes the note-overlay column at the given horizontal pixel position.
+        The column is first cleared to transparent, then every note that is
+        currently held is stamped as a light-blue (50% opacity) one-bin-high
+        rectangle at the row matching its frequency. */
+    void drawNoteOverlayColumn (int column,
+                                const juce::Array<int>& activeNotes,
+                                float fMinValue,
+                                float binsPerOctave);
 
+    // The audio/CQT thread and the MIDI translator the visualizer renders.
     CQTThread::Ptr& cqt;
 
+    // Reference to the plugin's current translator instance, so the visualizer
+    // always polls the most recent one (same pattern as MidiNoteDisplayPanel).
+    MidiTranslator::Ptr& midiTranslator;
+
+    // Raw pointers to the GUI parameters that determine the CQT bin grid. They
+    // are read fresh on every update, so the note->bin mapping stays valid even
+    // while the CQT thread is being rebuilt.
+    std::atomic<float>* fMinParam;
+    std::atomic<float>* bPerOctParam;
+
     juce::Image image;
+    juce::Image noteOverlay;
     int imageOffset;
     
     bool dBScale;

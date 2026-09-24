@@ -34,3 +34,5 @@ first test:
 - highlight recognized notes in the Visualizer and write them onto GUI
 
 - make latency lower through what?
+
+Kalman Filter
