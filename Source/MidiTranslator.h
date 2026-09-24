@@ -61,7 +61,7 @@ public:
     /** Number of per-overtone weights in the overtone "sound profile" tuned by
         the GUI. Each entry weights the strength of one harmonic of a candidate
         fundamental (see applyPitchDetectionFilter()). */
-    static constexpr int numOvertoneProfileEntries = 5;
+    static constexpr int numOvertoneProfileEntries = 10;
 
     using Ptr = juce::ReferenceCountedObjectPtr<MidiTranslator>;
 

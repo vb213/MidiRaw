@@ -175,7 +175,7 @@ std::vector<bool> MidiTranslator::applyPitchDetectionFilter(std::vector<bool> ac
 {
     const int numOvertones = numOvertoneProfileEntries;
     std::vector<std::pair<int, float>> scores{};
-    const int overtonePattern[numOvertones] = {12, 19, 24, 28, 31};
+    const int overtonePattern[numOvertones] = {-12, 12, 19, 24, 28, 31, 34, 36, 38, 40};
 
     // Read the GUI-tunable sound profile. The per-overtone weights are normalised
     // here so they always sum to one, regardless of the raw slider values.

@@ -112,7 +112,7 @@ CqtanalyzerAudioProcessorEditor::CqtanalyzerAudioProcessorEditor(CqtanalyzerAudi
 
     addAndMakeVisible(lbGamma);
     lbGamma.setJustification(juce::Justification::centred);
-    lbGamma.setText("GGGamma", juce::dontSendNotification);
+    lbGamma.setText("Gamma", juce::dontSendNotification);
 
     addAndMakeVisible(lbGain);
     lbGain.setJustification(juce::Justification::centred);
@@ -138,7 +138,7 @@ CqtanalyzerAudioProcessorEditor::CqtanalyzerAudioProcessorEditor(CqtanalyzerAudi
     lbScoreThreshold.setText("Thresh", juce::dontSendNotification);
 
     // Per-overtone profile sliders
-    static const char *const overtoneNames[MidiTranslator::numOvertoneProfileEntries] = {"OV1", "OV2", "OV3", "OV4", "OV5"};
+    static const char *const overtoneNames[MidiTranslator::numOvertoneProfileEntries] = {"OV1", "OV2", "OV3", "OV4", "OV5", "OV6", "OV7", "OV8", "OV9", "OV10"};
     for (int i = 0; i < MidiTranslator::numOvertoneProfileEntries; ++i)
     {
         addAndMakeVisible(slOvertone[static_cast<size_t>(i)]);
@@ -249,7 +249,7 @@ void CqtanalyzerAudioProcessorEditor::resized()
     // UI control
     // The overtone score group lives on the far right, with the gain column
     // immediately to its left.
-    const int overtoneGridCols = 3;
+    const int overtoneGridCols = 6;
     const int overtoneGridRows = 2;
     const int overtoneGridGapH = 6;
     const int overtoneGridGapV = 8;
@@ -259,8 +259,9 @@ void CqtanalyzerAudioProcessorEditor::resized()
     // First remove the far-right region for the overtone group.
     juce::Rectangle<int> OvertoneArea = area.removeFromRight(overtonePanelWidth);
 
-    // Lay the six sliders out as a compact grid (threshold first, then the five
-    // overtone profile sliders).
+    // Lay the sliders out as a compact 6x2 grid (threshold first, then the
+    // overtone profile sliders). With one threshold and ten overtone sliders
+    // (eleven total) one cell of the grid remains empty.
     const int overtoneCellW = (OvertoneArea.getWidth() - (overtoneGridCols - 1) * overtoneGridGapH) / overtoneGridCols;
     const int overtoneCellH = (OvertoneArea.getHeight() - (overtoneGridRows - 1) * overtoneGridGapV) / overtoneGridRows;
 
