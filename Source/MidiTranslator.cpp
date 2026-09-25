@@ -128,11 +128,15 @@ void MidiTranslator::processSpectrum(const float *spectrum, int numBins)
     const int lowNote = minNote.load();
     const int highNote = maxNote.load();
 
+    int baseActiveCount = 0;
+    int harmActiveCount = 0;
+
     // Map every bin that exceeds the threshold to a MIDI note, keeping the
     // strongest magnitude per note (used as velocity).
     for (int i = 0; i < numBins; ++i)
     {
         const float mag = spectrum[i];
+
         if (mag < currentThresholdHarmonic)
             continue;
 
@@ -149,12 +153,16 @@ void MidiTranslator::processSpectrum(const float *spectrum, int numBins)
         if (mag < currentThresholdBaseNote)
         {
             frameActiveHarmonic[static_cast<size_t>(note)] = true;
+            harmActiveCount++;
         }
         else
         {
+            baseActiveCount++;
             frameActiveBaseNote[static_cast<size_t>(note)] = true;
         }
     }
+    if (harmActiveCount > 0)
+        debugPrint("Len base: " + std::to_string(baseActiveCount) + " --- Len harmonics " + std::to_string(harmActiveCount));
     // do pitch detection with overtone algorithm
     frameActiveBaseNote = applyPitchDetectionFilter(frameActiveBaseNote, frameActiveHarmonic);
 
@@ -187,7 +195,8 @@ std::vector<bool> MidiTranslator::applyPitchDetectionFilter(std::vector<bool> fr
 {
     const int numOvertones = numOvertoneProfileEntries;
     std::vector<std::pair<int, float>> scores{};
-    const int overtonePattern[numOvertones] = {-12, 12, 19, 24, 28, 31, 34, 36, 38, 40};
+    // const int overtonePattern[numOvertones] = {-12, 12, 19, 24, 28, 31, 34, 36, 38, 40};
+    const int overtonePattern[numOvertones] = {-42, -38, -34, -28, -19, 19, 28, 34, 38, 42};
 
     // Read the GUI-tunable sound profile. The per-overtone weights are normalised
     // here so they always sum to one, regardless of the raw slider values.
@@ -219,7 +228,7 @@ std::vector<bool> MidiTranslator::applyPitchDetectionFilter(std::vector<bool> fr
         for (int i = 0; i < numOvertones; i++)
         {
             int overtoneIndex = note + overtonePattern[i];
-            if (overtoneIndex < frameActiveHarmonic.size() && frameActiveHarmonic[overtoneIndex])
+            if (0 <= overtoneIndex && overtoneIndex < frameActiveHarmonic.size() && frameActiveHarmonic[overtoneIndex])
             {
                 score += overtoneProfile[i];
             }

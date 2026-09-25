@@ -313,10 +313,10 @@ std::vector<std::unique_ptr<juce::RangedAudioParameter>> CqtanalyzerAudioProcess
     params.push_back(OSCParameterInterface::createParameterTheOldWay("dynamicRange", "Dynamic Range", "dB", juce::NormalisableRange<float>(10.0f, 80.0f, 1.f), 40.0, [](float value)
                                                                      { return juce::String(value, 0); }, nullptr));
 
-    params.push_back(OSCParameterInterface::createParameterTheOldWay("midiThreshold", "MIDI Threshold ", "", juce::NormalisableRange<float>(0.0f, 1.0f, 0.001f), 0.05f, [](float value)
+    params.push_back(OSCParameterInterface::createParameterTheOldWay("midiThreshold", "MIDI Threshold ", "", juce::NormalisableRange<float>(0.0f, 3.0f, 0.001f), 1.5f, [](float value)
                                                                      { return juce::String(value, 3); }, nullptr));
 
-    params.push_back(OSCParameterInterface::createParameterTheOldWay("midiThresholdHarmonic", "MIDI Threshold Harmonic", "", juce::NormalisableRange<float>(0.0f, 1.0f, 0.001f), 0.2f, [](float value)
+    params.push_back(OSCParameterInterface::createParameterTheOldWay("midiThresholdHarmonic", "MIDI Threshold Harmonic", "", juce::NormalisableRange<float>(0.0f, 3.0f, 0.001f), 1.2f, [](float value)
                                                                      { return juce::String(value, 3); }, nullptr));
 
     params.push_back(OSCParameterInterface::createParameterTheOldWay("midiChannel", "MIDI Channel ", "", juce::NormalisableRange<float>(1.0f, 16.0f, 1.0f), 1.0f, [](float value)
