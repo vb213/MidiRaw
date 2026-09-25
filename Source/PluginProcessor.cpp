@@ -47,6 +47,7 @@ CqtanalyzerAudioProcessor::CqtanalyzerAudioProcessor()
     dBScale = parameters.getRawParameterValue("dBScale");
     dynamicRange = parameters.getRawParameterValue("dynamicRange");
     midiThreshold = parameters.getRawParameterValue("midiThreshold");
+    midiThresholdHarmonic = parameters.getRawParameterValue("midiThresholdHarmonic");
     midiChannel = parameters.getRawParameterValue("midiChannel");
     scoreThreshold = parameters.getRawParameterValue("scoreThreshold");
     for (int i = 0; i < MidiTranslator::numOvertoneProfileEntries; ++i)
@@ -58,6 +59,7 @@ CqtanalyzerAudioProcessor::CqtanalyzerAudioProcessor()
     parameters.addParameterListener("bPerOct", this);
     parameters.addParameterListener("gamma", this);
     parameters.addParameterListener("midiThreshold", this);
+    parameters.addParameterListener("midiThresholdHarmonic", this);
     parameters.addParameterListener("midiChannel", this);
     parameters.addParameterListener("scoreThreshold", this);
     for (int i = 0; i < MidiTranslator::numOvertoneProfileEntries; ++i)
@@ -108,6 +110,7 @@ void CqtanalyzerAudioProcessor::prepareToPlay(double sampleRate, int samplesPerB
     midiTranslator = new MidiTranslator(retainedCqt->getMidiFifo(),
                                         sampleRate,
                                         *midiThreshold,
+                                        *midiThresholdHarmonic,
                                         static_cast<int>(*midiChannel),
                                         *fMin,
                                         static_cast<unsigned int>(*bPerOct / 12.0f));
@@ -244,6 +247,8 @@ void CqtanalyzerAudioProcessor::parameterChanged(const juce::String &parameterID
         retainedMidi->setThreshold(newValue);
     else if ((parameterID == "midiChannel") && (retainedMidi != nullptr))
         retainedMidi->setMidiChannel(static_cast<int>(newValue));
+    else if ((parameterID == "midiThresholdHarmonic") && (retainedMidi != nullptr))
+        retainedMidi->setThresholdHarmonic(newValue);
     else if ((parameterID == "scoreThreshold") && (retainedMidi != nullptr))
         retainedMidi->setScoreThreshold(newValue);
     else if (parameterID.startsWith("overtone") && (retainedMidi != nullptr))
@@ -271,6 +276,7 @@ void CqtanalyzerAudioProcessor::timerCallback()
     midiTranslator = new MidiTranslator(retainedCqt->getMidiFifo(),
                                         getSamplerate(),
                                         *midiThreshold,
+                                        *midiThresholdHarmonic,
                                         static_cast<int>(*midiChannel),
                                         *fMin,
                                         static_cast<unsigned int>(*bPerOct / 12.0f));
@@ -310,12 +316,14 @@ std::vector<std::unique_ptr<juce::RangedAudioParameter>> CqtanalyzerAudioProcess
     params.push_back(OSCParameterInterface::createParameterTheOldWay("midiThreshold", "MIDI Threshold ", "", juce::NormalisableRange<float>(0.0f, 1.0f, 0.001f), 0.05f, [](float value)
                                                                      { return juce::String(value, 3); }, nullptr));
 
+    params.push_back(OSCParameterInterface::createParameterTheOldWay("midiThresholdHarmonic", "MIDI Threshold Harmonic", "", juce::NormalisableRange<float>(0.0f, 1.0f, 0.001f), 0.2f, [](float value)
+                                                                     { return juce::String(value, 3); }, nullptr));
+
     params.push_back(OSCParameterInterface::createParameterTheOldWay("midiChannel", "MIDI Channel ", "", juce::NormalisableRange<float>(1.0f, 16.0f, 1.0f), 1.0f, [](float value)
                                                                      { return juce::String(static_cast<int>(value)); }, nullptr));
 
     params.push_back(OSCParameterInterface::createParameterTheOldWay("scoreThreshold", "Overtone Score Threshold ", "", juce::NormalisableRange<float>(0.0f, 1.0f, 0.001f), 0.5f, [](float value)
                                                                      { return juce::String(value, 3); }, nullptr));
-
     // Per-overtone sound-profile weights. The translator normalises these to sum
     // to one internally, so any value in [0,1] is meaningful.
     for (int i = 0; i < MidiTranslator::numOvertoneProfileEntries; ++i)

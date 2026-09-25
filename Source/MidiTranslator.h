@@ -78,6 +78,7 @@ public:
     MidiTranslator(BufferQueue<float> &midiFifo,
                    const double sampleRate,
                    const float threshold,
+                   const float threshholdHarmonic,
                    const int midiChannel,
                    const float fMin,
                    const unsigned int binsPerSemitone);
@@ -87,6 +88,9 @@ public:
     /** Runtime-adjustable configuration. Can be called from any thread. */
     void setThreshold(float newThreshold) { threshold.store(newThreshold); }
     float getThreshold() const { return threshold.load(); }
+
+    void setThresholdHarmonic(float newThreshold) { thresholdHarmonic.store(newThreshold); }
+    float getThresholdHarmonic() const { return thresholdHarmonic.load(); }
 
     void setMidiChannel(int newChannel)
     {
@@ -194,7 +198,7 @@ private:
     /** Sends note-offs for every note that is currently flagged as active. */
     void sendAllNotesOff();
 
-    std::vector<bool> applyPitchDetectionFilter(std::vector<bool> activePitches);
+    std::vector<bool> applyPitchDetectionFilter(std::vector<bool> frameActiveBaseNote, std::vector<bool> frameActiveHarmonic);
 
     //==============================================================================
     BufferQueue<float> &midiFifo;
@@ -212,6 +216,7 @@ private:
 
     // Config, adjustable from the GUI / message thread while run() reads them.
     std::atomic<float> threshold;
+    std::atomic<float> thresholdHarmonic;
     std::atomic<int> midiChannel;
     std::atomic<int> minNote;
     std::atomic<int> maxNote;

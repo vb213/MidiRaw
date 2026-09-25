@@ -32,7 +32,7 @@
 #define ProcessorClass CqtanalyzerAudioProcessor
 
 //==============================================================================
-class CqtanalyzerAudioProcessor  :  public AudioProcessorBase<IOTypes::AudioChannels<2>, IOTypes::AudioChannels<2>>, private juce::Timer
+class CqtanalyzerAudioProcessor : public AudioProcessorBase<IOTypes::AudioChannels<2>, IOTypes::AudioChannels<2>>, private juce::Timer
 {
 public:
     constexpr static int numberOfInputChannels = 2;
@@ -42,73 +42,70 @@ public:
     ~CqtanalyzerAudioProcessor() override;
 
     //==============================================================================
-    void prepareToPlay (double sampleRate, int samplesPerBlock) override;
+    void prepareToPlay(double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
-    
-    #ifndef JucePlugin_PreferredChannelConfigurations
-     bool isBusesLayoutSupported (const BusesLayout& layouts) const override;
-    #endif
 
-    void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
+#ifndef JucePlugin_PreferredChannelConfigurations
+    bool isBusesLayoutSupported(const BusesLayout &layouts) const override;
+#endif
+
+    void processBlock(juce::AudioBuffer<float> &, juce::MidiBuffer &) override;
 
     //==============================================================================
-    juce::AudioProcessorEditor* createEditor() override;
+    juce::AudioProcessorEditor *createEditor() override;
     bool hasEditor() const override;
-
 
     //==============================================================================
     int getNumPrograms() override;
     int getCurrentProgram() override;
-    void setCurrentProgram (int index) override;
-    const juce::String getProgramName (int index) override;
-    void changeProgramName (int index, const juce::String& newName) override;
+    void setCurrentProgram(int index) override;
+    const juce::String getProgramName(int index) override;
+    void changeProgramName(int index, const juce::String &newName) override;
 
     //==============================================================================
-    void getStateInformation (juce::MemoryBlock& destData) override;
-    void setStateInformation (const void* data, int sizeInBytes) override;
+    void getStateInformation(juce::MemoryBlock &destData) override;
+    void setStateInformation(const void *data, int sizeInBytes) override;
 
     //==============================================================================
-    void parameterChanged (const juce::String &parameterID, float newValue) override;
+    void parameterChanged(const juce::String &parameterID, float newValue) override;
     void updateBuffers() override; // use this to implement a buffer update method
     void timerCallback() override;
 
-    CQTThread::Ptr& getCQT() { return cqt; }
-    MidiTranslator::Ptr& getMidiTranslator() { return midiTranslator; }
-    double& getSamplerate() { return sr; }
-    void setSliderDrag ( bool newStatus ) { sliderDrag = newStatus; }
-    
+    CQTThread::Ptr &getCQT() { return cqt; }
+    MidiTranslator::Ptr &getMidiTranslator() { return midiTranslator; }
+    double &getSamplerate() { return sr; }
+    void setSliderDrag(bool newStatus) { sliderDrag = newStatus; }
+
     //======= Parameters ===========================================================
     std::vector<std::unique_ptr<juce::RangedAudioParameter>> createParameterLayout();
     //==============================================================================
 
-
 private:
     //==============================================================================
     // list of used audio parameters
-    std::atomic<float>* fMin;
-    std::atomic<float>* nOctaves;
-    std::atomic<float>* bPerOct;
-    std::atomic<float>* gamma;
-    std::atomic<float>* gain;
-    std::atomic<float>* dBScale;
-    std::atomic<float>* dynamicRange;
-    std::atomic<float>* midiThreshold;
-    std::atomic<float>* midiChannel;
-    std::atomic<float>* scoreThreshold;
-    std::array<std::atomic<float>*, MidiTranslator::numOvertoneProfileEntries> overtoneEntry;
-    
+    std::atomic<float> *fMin;
+    std::atomic<float> *nOctaves;
+    std::atomic<float> *bPerOct;
+    std::atomic<float> *gamma;
+    std::atomic<float> *gain;
+    std::atomic<float> *dBScale;
+    std::atomic<float> *dynamicRange;
+    std::atomic<float> *midiThreshold;
+    std::atomic<float> *midiThresholdHarmonic;
+    std::atomic<float> *midiChannel;
+    std::atomic<float> *scoreThreshold;
+    std::array<std::atomic<float> *, MidiTranslator::numOvertoneProfileEntries> overtoneEntry;
+
     double sr;
     bool sliderDrag = false;
 
-    
     juce::AudioBuffer<float> copyBuffer;
-    
+
     CQTThread::Ptr cqt;
     MidiTranslator::Ptr midiTranslator;
-    
+
     bool CqtParamChanged = false;
 
-
     //==============================================================================
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (CqtanalyzerAudioProcessor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CqtanalyzerAudioProcessor)
 };

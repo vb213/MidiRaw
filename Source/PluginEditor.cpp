@@ -30,7 +30,7 @@ CqtanalyzerAudioProcessorEditor::CqtanalyzerAudioProcessorEditor(CqtanalyzerAudi
     // ============== BEGIN: essentials ======================
     // set GUI size and lookAndFeel
     // setSize(500, 300); // use this to create a fixed-size GUI
-    setResizeLimits(900, 700, 1200, 1000); // use this to create a resizable GUI
+    setResizeLimits(1200, 700, 1500, 1000); // use this to create a resizable GUI
     setLookAndFeel(&globalLaF);
 
     samplerate = p.getSampleRate();
@@ -136,6 +136,34 @@ CqtanalyzerAudioProcessorEditor::CqtanalyzerAudioProcessorEditor(CqtanalyzerAudi
     addAndMakeVisible(lbScoreThreshold);
     lbScoreThreshold.setJustification(juce::Justification::centred);
     lbScoreThreshold.setText("Thresh", juce::dontSendNotification);
+
+    // MIDI threshold sliders (threshold / thresholdHarmonic), adjustable in real
+    // time and placed between the score-threshold slider and the overtone group.
+    addAndMakeVisible(slMidiThreshold);
+    slMidiThreshold.setSliderStyle(juce::Slider::LinearVertical);
+    slMidiThreshold.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 12);
+    slMidiThreshold.setColour(juce::Slider::thumbColourId, globalLaF.ClWidgetColours[3]);
+    slMidiThreshold.setRange(0.0, 1.0, 0.001);
+    slMidiThresholdAttachment.reset(new SliderAttachment(valueTreeState, "midiThreshold", slMidiThreshold));
+    slMidiThreshold.addListener(this);
+    slMidiThreshold.setName("midiThreshold");
+
+    addAndMakeVisible(lbMidiThreshold);
+    lbMidiThreshold.setJustification(juce::Justification::centred);
+    lbMidiThreshold.setText("Thr", juce::dontSendNotification);
+
+    addAndMakeVisible(slMidiThresholdHarmonic);
+    slMidiThresholdHarmonic.setSliderStyle(juce::Slider::LinearVertical);
+    slMidiThresholdHarmonic.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 12);
+    slMidiThresholdHarmonic.setColour(juce::Slider::thumbColourId, globalLaF.ClWidgetColours[3]);
+    slMidiThresholdHarmonic.setRange(0.0, 1.0, 0.001);
+    slMidiThresholdHarmonicAttachment.reset(new SliderAttachment(valueTreeState, "midiThresholdHarmonic", slMidiThresholdHarmonic));
+    slMidiThresholdHarmonic.addListener(this);
+    slMidiThresholdHarmonic.setName("midiThresholdHarmonic");
+
+    addAndMakeVisible(lbMidiThresholdHarmonic);
+    lbMidiThresholdHarmonic.setJustification(juce::Justification::centred);
+    lbMidiThresholdHarmonic.setText("ThrH", juce::dontSendNotification);
 
     // Per-overtone profile sliders
     static const char *const overtoneNames[MidiTranslator::numOvertoneProfileEntries] = {"OV1", "OV2", "OV3", "OV4", "OV5", "OV6", "OV7", "OV8", "OV9", "OV10"};
@@ -249,7 +277,7 @@ void CqtanalyzerAudioProcessorEditor::resized()
     // UI control
     // The overtone score group lives on the far right, with the gain column
     // immediately to its left.
-    const int overtoneGridCols = 6;
+    const int overtoneGridCols = 7;
     const int overtoneGridRows = 2;
     const int overtoneGridGapH = 6;
     const int overtoneGridGapV = 8;
@@ -259,13 +287,14 @@ void CqtanalyzerAudioProcessorEditor::resized()
     // First remove the far-right region for the overtone group.
     juce::Rectangle<int> OvertoneArea = area.removeFromRight(overtonePanelWidth);
 
-    // Lay the sliders out as a compact 6x2 grid (threshold first, then the
-    // overtone profile sliders). With one threshold and ten overtone sliders
-    // (eleven total) one cell of the grid remains empty.
+    // Lay the sliders out as a compact 7x2 grid (score threshold, both MIDI
+    // thresholds, then the overtone profile sliders). With one score-threshold,
+    // two MIDI thresholds and ten overtone sliders (thirteen total) one cell of
+    // the grid remains empty.
     const int overtoneCellW = (OvertoneArea.getWidth() - (overtoneGridCols - 1) * overtoneGridGapH) / overtoneGridCols;
     const int overtoneCellH = (OvertoneArea.getHeight() - (overtoneGridRows - 1) * overtoneGridGapV) / overtoneGridRows;
 
-    for (int i = 0; i < MidiTranslator::numOvertoneProfileEntries + 1; ++i)
+    for (int i = 0; i < MidiTranslator::numOvertoneProfileEntries + 3; ++i)
     {
         const int col = i % overtoneGridCols;
         const int row = i / overtoneGridCols;
@@ -274,11 +303,31 @@ void CqtanalyzerAudioProcessorEditor::resized()
                                   OvertoneArea.getY() + row * (overtoneCellH + overtoneGridGapV),
                                   overtoneCellW, overtoneCellH);
 
-        juce::Slider &sliderRef = (i == 0) ? slScoreThreshold : slOvertone[static_cast<size_t>(i - 1)];
-        SimpleLabel &labelRef = (i == 0) ? lbScoreThreshold : lbOvertone[static_cast<size_t>(i - 1)];
+        juce::Slider *sliderRef = nullptr;
+        SimpleLabel *labelRef = nullptr;
+        if (i == 0)
+        {
+            sliderRef = &slScoreThreshold;
+            labelRef = &lbScoreThreshold;
+        }
+        else if (i == 1)
+        {
+            sliderRef = &slMidiThreshold;
+            labelRef = &lbMidiThreshold;
+        }
+        else if (i == 2)
+        {
+            sliderRef = &slMidiThresholdHarmonic;
+            labelRef = &lbMidiThresholdHarmonic;
+        }
+        else
+        {
+            sliderRef = &slOvertone[static_cast<size_t>(i - 3)];
+            labelRef = &lbOvertone[static_cast<size_t>(i - 3)];
+        }
 
-        labelRef.setBounds(cell.removeFromTop(overtoneLabelH));
-        sliderRef.setBounds(cell);
+        labelRef->setBounds(cell.removeFromTop(overtoneLabelH));
+        sliderRef->setBounds(cell);
     }
 
     // Small gap between the overtone group and the gain column.

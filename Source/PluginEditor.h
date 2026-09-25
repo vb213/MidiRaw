@@ -106,10 +106,15 @@ private:
     
     // Overtone / score-threshold control group placed on the right side of the UI.
     juce::Slider slScoreThreshold;
+    // Real-time adjustable MIDI thresholds (threshold / thresholdHarmonic),
+    // placed between the score-threshold slider and the overtone profile sliders.
+    juce::Slider slMidiThreshold, slMidiThresholdHarmonic;
     std::array<juce::Slider, MidiTranslator::numOvertoneProfileEntries> slOvertone;
     std::array<std::unique_ptr<SliderAttachment>, MidiTranslator::numOvertoneProfileEntries> slOvertoneAttachment;
     std::unique_ptr<SliderAttachment> slScoreThresholdAttachment;
+    std::unique_ptr<SliderAttachment> slMidiThresholdAttachment, slMidiThresholdHarmonicAttachment;
     SimpleLabel lbScoreThreshold;
+    SimpleLabel lbMidiThreshold, lbMidiThresholdHarmonic;
     std::array<SimpleLabel, MidiTranslator::numOvertoneProfileEntries> lbOvertone;
     
     

@@ -27,13 +27,15 @@
 
 MidiTranslator::MidiTranslator(BufferQueue<float> &fifo,
                                const double sr,
-                               const float initialThreshold,
+                               const float initialThresholdBasenote,
+                               const float initialThresholdHarmonic,
                                const int initialChannel,
                                const float fMin,
                                const unsigned int binsPerSemitone)
     : Thread("MIDI Translator"),
       midiFifo(fifo),
-      threshold(initialThreshold),
+      threshold(initialThresholdBasenote),
+      thresholdHarmonic(initialThresholdHarmonic),
       midiChannel(juce::jlimit(1, 16, initialChannel)),
       minNote(0),
       maxNote(numMidiNotes - 1),
@@ -116,10 +118,12 @@ void MidiTranslator::processSpectrum(const float *spectrum, int numBins)
 {
     // One bit per MIDI note indicating whether ANY of its bins is above threshold
     // in this frame.
-    std::vector<bool> frameActive(static_cast<size_t>(numMidiNotes), false);
+    std::vector<bool> frameActiveBaseNote(static_cast<size_t>(numMidiNotes), false);
+    std::vector<bool> frameActiveHarmonic(static_cast<size_t>(numMidiNotes), false);
     std::vector<float> framePeak(static_cast<size_t>(numMidiNotes), 0.0f);
 
-    const float currentThreshold = threshold.load();
+    const float currentThresholdBaseNote = threshold.load();
+    const float currentThresholdHarmonic = thresholdHarmonic.load();
     const int channel = midiChannel.load();
     const int lowNote = minNote.load();
     const int highNote = maxNote.load();
@@ -129,7 +133,7 @@ void MidiTranslator::processSpectrum(const float *spectrum, int numBins)
     for (int i = 0; i < numBins; ++i)
     {
         const float mag = spectrum[i];
-        if (mag < currentThreshold)
+        if (mag < currentThresholdHarmonic)
             continue;
 
         const float freq = binFrequencies[static_cast<size_t>(i)];
@@ -141,15 +145,23 @@ void MidiTranslator::processSpectrum(const float *spectrum, int numBins)
         auto &peak = framePeak[static_cast<size_t>(note)];
         if (mag > peak)
             peak = mag;
-        frameActive[static_cast<size_t>(note)] = true;
+
+        if (mag < currentThresholdBaseNote)
+        {
+            frameActiveHarmonic[static_cast<size_t>(note)] = true;
+        }
+        else
+        {
+            frameActiveBaseNote[static_cast<size_t>(note)] = true;
+        }
     }
     // do pitch detection with overtone algorithm
-    frameActive = applyPitchDetectionFilter(frameActive);
+    frameActiveBaseNote = applyPitchDetectionFilter(frameActiveBaseNote, frameActiveHarmonic);
 
     // Compare with the persistent per-note flags and emit the transitions.
     for (int note = lowNote; note <= highNote; ++note)
     {
-        const bool nowActive = frameActive[static_cast<size_t>(note)];
+        const bool nowActive = frameActiveBaseNote[static_cast<size_t>(note)];
 
         if (nowActive && !noteActive[static_cast<size_t>(note)].load())
         {
@@ -171,7 +183,7 @@ void MidiTranslator::processSpectrum(const float *spectrum, int numBins)
     }
 }
 
-std::vector<bool> MidiTranslator::applyPitchDetectionFilter(std::vector<bool> activePitches)
+std::vector<bool> MidiTranslator::applyPitchDetectionFilter(std::vector<bool> frameActiveBaseNote, std::vector<bool> frameActiveHarmonic)
 {
     const int numOvertones = numOvertoneProfileEntries;
     std::vector<std::pair<int, float>> scores{};
@@ -198,14 +210,16 @@ std::vector<bool> MidiTranslator::applyPitchDetectionFilter(std::vector<bool> ac
     for (int i = 0; i < numOvertones; i++)
         overtoneProfile[i] = rawProfile[i] / profileSum;
 
-    for (int note = 0; note < activePitches.size(); note++)
+    for (int note = 0; note < frameActiveBaseNote.size(); note++)
     {
-        // intended range of score: [0.0, 1.0]
+        if (!frameActiveBaseNote[note])
+            continue;
+        //  intended range of score: [0.0, 1.0]
         float score = 0.0;
         for (int i = 0; i < numOvertones; i++)
         {
             int overtoneIndex = note + overtonePattern[i];
-            if (overtoneIndex < activePitches.size() && activePitches[overtoneIndex])
+            if (overtoneIndex < frameActiveHarmonic.size() && frameActiveHarmonic[overtoneIndex])
             {
                 score += overtoneProfile[i];
             }
@@ -225,7 +239,7 @@ std::vector<bool> MidiTranslator::applyPitchDetectionFilter(std::vector<bool> ac
     {
         k = scores.size();
     }
-    std::vector<bool> filteredActivePitches(activePitches.size());
+    std::vector<bool> filteredActivePitches(frameActiveBaseNote.size());
     for (int i = 0; i < k; i++)
     {
         if (scores[i].second > scoreThreshhold)
