@@ -63,9 +63,9 @@ def wav_to_cqt_spectrogram(
 if __name__ == "__main__":
 
 
-    for filename in tqdm(os.listdir("python-tests/chords")):
+    for filename in tqdm(os.listdir("python-tests/samples")):
         if filename.endswith(".wav"):
-            filepath = os.path.join("python-tests/chords", filename)
+            filepath = os.path.join("python-tests/samples", filename)
             spec = wav_to_cqt_spectrogram(filepath)
             savename = os.path.splitext(filename)[0] + ".txt"
             np.savetxt(os.path.join("python-tests/spectograms", savename), spec)

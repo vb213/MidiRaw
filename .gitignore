@@ -11,7 +11,7 @@ _deps
 **/.DS_Store
 
 __pycache__
-chords
+samples
 testfiles
 # It's nice to have the Builds folder exist, to remind us where it is
 Builds/*
