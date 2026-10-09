@@ -169,6 +169,7 @@ set(SourceFiles
 
     Source/Utilities/BufferQueue.h
     Source/Utilities/DebugLogger.h
+    Source/Utilities/SpectrumLogger.h
     Source/Utilities/OverlappingSampleCollector.h
     Source/Utilities/Parula.h)
 

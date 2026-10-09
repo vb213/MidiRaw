@@ -10,6 +10,9 @@ CTestTestfile.cmake
 _deps
 **/.DS_Store
 
+__pycache__
+
+testfiles
 # It's nice to have the Builds folder exist, to remind us where it is
 Builds/*
 out/

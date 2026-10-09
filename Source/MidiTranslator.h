@@ -21,11 +21,13 @@
 #include <JuceHeader.h>
 
 #include "Utilities/BufferQueue.h"
+#include "Utilities/SpectrumLogger.h"
 
 #include <atomic>
 #include <cmath>
 #include <vector>
 #include <array>
+#include <memory>
 
 /**
   Translates the frequency spectrum produced by the CQT thread into MIDI notes.
@@ -198,6 +200,7 @@ private:
     /** Sends note-offs for every note that is currently flagged as active. */
     void sendAllNotesOff();
 
+    bool isLogWorthy(const float *spectrum, int numBins);
     std::vector<bool> applyPitchDetectionFilter(std::vector<bool> frameActiveBaseNote, std::vector<bool> frameActiveHarmonic);
 
     //==============================================================================
@@ -243,6 +246,10 @@ private:
     std::atomic<bool> forceAllNotesOff;
 
     double sampleRate;
+
+    // Asynchronously logs the per-frame artifacts (base-note flags, harmonic
+    // flags and raw spectrum) to a text file on a dedicated logging thread.
+    std::unique_ptr<SpectrumLogger> spectrumLogger;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MidiTranslator)
 };

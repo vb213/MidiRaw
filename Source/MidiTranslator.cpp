@@ -37,12 +37,17 @@ MidiTranslator::MidiTranslator(BufferQueue<float> &fifo,
       threshold(initialThresholdBasenote),
       thresholdHarmonic(initialThresholdHarmonic),
       midiChannel(juce::jlimit(1, 16, initialChannel)),
-      minNote(0),
+      // The lowest analysed frequency (fMin, the frequency of CQT bin 0) maps
+      // to the lowest MIDI note the spectrum can ever produce, so initialise
+      // the active-note range there instead of MIDI note 0.
+      minNote(juce::jlimit(0, numMidiNotes - 1,
+                           juce::roundToInt(69.0f + 12.0f * std::log2(fMin / 440.0f)))),
       maxNote(numMidiNotes - 1),
       eventFifo(maxEventsInQueue),
       forceAllNotesOff(false),
       maxOvertone(defaultMaxOvertone),
-      sampleRate(sr)
+      sampleRate(sr),
+      spectrumLogger(std::make_unique<SpectrumLogger>())
 {
     // Build the per-index frequency table. The CQT thread pushes its bins in
     // reversed order, so buffer index i holds CQT bin (numBins - 1 - i).
@@ -127,7 +132,7 @@ void MidiTranslator::processSpectrum(const float *spectrum, int numBins)
     const int channel = midiChannel.load();
     const int lowNote = minNote.load();
     const int highNote = maxNote.load();
-
+    debugPrint(std::to_string(minNote) + " - " + std::to_string(maxNote));
     int baseActiveCount = 0;
     int harmActiveCount = 0;
 
@@ -166,6 +171,12 @@ void MidiTranslator::processSpectrum(const float *spectrum, int numBins)
     // do pitch detection with overtone algorithm
     frameActiveBaseNote = applyPitchDetectionFilter(frameActiveBaseNote, frameActiveHarmonic);
 
+    // Log the per-frame artifacts (post-filter base notes, harmonics and the raw
+    // spectrum). Handed to a dedicated logging thread via an internal queue, so
+    // this never blocks the processing loop.
+    if (spectrumLogger != nullptr && isLogWorthy(spectrum, numBins))
+        spectrumLogger->logFrame(frameActiveBaseNote, frameActiveHarmonic, spectrum, numBins);
+
     // Compare with the persistent per-note flags and emit the transitions.
     for (int note = lowNote; note <= highNote; ++note)
     {
@@ -189,6 +200,18 @@ void MidiTranslator::processSpectrum(const float *spectrum, int numBins)
             enqueueMessage(juce::MidiMessage::noteOff(channel, note, 0.0f));
         }
     }
+}
+
+bool MidiTranslator::isLogWorthy(const float *spectrum, int numBins)
+{
+    for (int i = 0; i < numBins; i++)
+    {
+        if (spectrum[i] > 0.0)
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 std::vector<bool> MidiTranslator::applyPitchDetectionFilter(std::vector<bool> frameActiveBaseNote, std::vector<bool> frameActiveHarmonic)

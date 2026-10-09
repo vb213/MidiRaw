@@ -114,7 +114,6 @@ void CqtanalyzerAudioProcessor::prepareToPlay(double sampleRate, int samplesPerB
                                         static_cast<int>(*midiChannel),
                                         *fMin,
                                         static_cast<unsigned int>(*bPerOct / 12.0f));
-
     copyBuffer.setSize(numberOfInputChannels, samplesPerBlock);
     copyBuffer.clear();
 
