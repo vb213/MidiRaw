@@ -281,3 +281,6 @@ def plot_spectrogram_comparison4(
     plt.show()
 
 
+if __name__ == "__main__":
+    spectrum = np.loadtxt("python-tests/spectograms/c3_cqt.txt")
+    plot_spectrogram_comparison(spectrum, spectrum, titles=("Original Spectrum", "Reconstructed Spectrum"), cmap="viridis")

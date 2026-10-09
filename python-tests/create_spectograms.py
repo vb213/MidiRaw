@@ -10,7 +10,7 @@ def wav_to_cqt_spectrogram(
     n_bins: int = 84,
     bins_per_octave: int = 12,
     fmin: float | None = None,
-    to_db: bool = True,
+    to_db: bool = False,
 ) -> np.ndarray:
     """
     Load a .wav file and compute its Constant-Q Transform spectrogram.
@@ -67,5 +67,5 @@ if __name__ == "__main__":
         if filename.endswith(".wav"):
             filepath = os.path.join("python-tests/chords", filename)
             spec = wav_to_cqt_spectrogram(filepath)
-            savename = os.path.splitext(filename)[0] + "_cqt.txt"
+            savename = os.path.splitext(filename)[0] + ".txt"
             np.savetxt(os.path.join("python-tests/spectograms", savename), spec)
