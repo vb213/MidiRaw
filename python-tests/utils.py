@@ -37,4 +37,18 @@ def load_data(path):
     return basenotes, harmonics, spectrum
 
 
-    
+
+
+def notename_to_index(note_name):
+    note_names = ['c', 'c#', 'd', 'd#', 'e', 'f', 'f#', 'g', 'g#', 'a', 'a#', 'h']
+    octave = int(note_name[-1])
+    note = note_name[:-1]
+    index = note_names.index(note) + (octave - 1) * 12
+    return index
+
+def index_to_notename(index):
+    note_names = ['c', 'c#', 'd', 'd#', 'e', 'f', 'f#', 'g', 'g#', 'a', 'a#', 'h']
+    octave = index // 12 + 1
+    note = note_names[index % 12]
+    return f"{note}{octave}"
+

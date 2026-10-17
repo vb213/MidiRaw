@@ -1,16 +1,13 @@
 import numpy as np
-from dataload import load_data
+from utils import index_to_notename, load_data
 from viz import plot_spectrogram_comparison, plot_spectrogram_comparison4
 import log
-_,_, spectrum = load_data("python-tests/testlogs/testlogEG#D#.txt")
-
+import os
 def expand_spectrum(spectrum, expandwidth=12):
     spectrum_expanded = np.zeros((spectrum.shape[0], spectrum.shape[1] + expandwidth))
     spectrum_expanded[:, expandwidth:] = spectrum
     return spectrum_expanded
-#spectrum = expand_spectrum(spectrum)
 
-I = np.eye(spectrum.shape[1])
 
 
 
@@ -45,7 +42,8 @@ def post_processing(x_est, threshhold=0.1):
         x_new[i] = prev * succ * x_est[i] 
     return x_est
 
-
+def I(size):
+    return np.eye(size)
 
 
 # https://de.wikipedia.org/wiki/Kalman-Filter
@@ -61,7 +59,7 @@ def correction(H, P, R, x_pred, z, logfile=None):
     innovation = z - H @ x_pred
     correction = K @ innovation
     x_est = x_pred + correction
-    P = (I - K @ H) @ P
+    P = (I(x_pred.shape[0]) - K @ H) @ P
 
     log.append_calculation_step_log(logfile, "K = P @ H.T @ (H @ P @ H.T + R)^{-1} = ", K)
     log.append_calculation_step_log(logfile, "x_est = x_pred + K @ (z - H @ x_pred) = ", x_est)
@@ -89,15 +87,15 @@ def prediction(F, x_est, P, Q, logfile=None):
 def filter(spectrum, H, P, R, F, Q, threshold_pre = 0.0, threshold_post = 0.0, logfile=None):
     log.clear_logfile(logfile)
     innovation_sequence = np.zeros_like(spectrum)
-    correction_sequence = np.zeros_like(spectrum)
+    correction_sequence = np.zeros((spectrum.shape[0], H.shape[1]))
 
     spectrum[spectrum < threshold_pre] = 0
     # init
-    x_pred = np.zeros_like(spectrum[0])
+    x_pred = np.zeros((H.shape[1]))
     z = spectrum[0]
     K, x_est, P, _, _ = correction(H, P, R, x_pred, z, logfile=logfile)
 
-    x_est_all = np.zeros((spectrum.shape[0], spectrum.shape[1]))
+    x_est_all = np.zeros((spectrum.shape[0], H.shape[1]))
 
     x_est_all[0] = x_est
 
@@ -123,22 +121,4 @@ def filter(spectrum, H, P, R, F, Q, threshold_pre = 0.0, threshold_post = 0.0, l
 
 if __name__ == "__main__":
 
-    H = create_matrix(spectrum.shape[1])
-    log.append_calculation_step_log("python-tests/pythonlogs/logH.txt" , "H = ", H)
-
-    # write H into csv file with one decimal point
-    F = I
-    P = I
-
-    # Q, R = estimate_R_Q(spectrum, N=10, per_bin=True, eps=1e-12)
-    Q = I 
-
-    spectrum_variance = np.var(spectrum, axis=0)
-
-    # measurement noise
-    R = I# np.full((spectrum.shape[1], spectrum.shape[1]), 100)
-    print(R)
-
-    x_est_all, innseq, corrseq = filter(spectrum, H, P, R, F, Q)
-
-    plot_spectrogram_comparison4(spectrum, x_est_all, innseq, corrseq, titles=("Original Spectrum", "Reconstructed Spectrum", "Innovation", "Correction"), cmap="viridis", log_amplitude=False)
+    pass

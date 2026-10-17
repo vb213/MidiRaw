@@ -3,69 +3,56 @@ import librosa
 import os
 from tqdm import tqdm
 
+import numpy as np
+import librosa
+
 def wav_to_cqt_spectrogram(
     filepath: str,
-    sr: int | None = None,
-    hop_length: int = 128,
+    sr: int | None = 22050,
+    hop_length: int = 512,
     n_bins: int = 84,
     bins_per_octave: int = 12,
     fmin: float | None = None,
-    to_db: bool = False,
+    domain: str = "magnitude",   # "magnitude" | "power" | "db"
+    normalize: bool = False,
 ) -> np.ndarray:
     """
-    Load a .wav file and compute its Constant-Q Transform spectrogram.
-
-    Parameters
-    ----------
-    filepath : str
-        Path to the .wav file.
-    sr : int | None
-        Target sample rate. None keeps the file's native sample rate.
-    hop_length : int
-        Number of samples between successive CQT columns.
-    n_bins : int
-        Total number of frequency bins.
-    bins_per_octave : int
-        Number of bins per octave.
-    fmin : float | None
-        Minimum frequency in Hz. Defaults to C1 (~32.7 Hz).
-    to_db : bool
-        If True, return magnitude in dB (relative to the max); otherwise
-        return the linear magnitude.
-
-    Returns
-    -------
-    np.ndarray
-        Array of shape (time_frames, n_bins).
+    Returns array of shape (time_frames, n_bins).
+    domain="power" gives |C|^2 (use this for a KF with additive power model).
+    domain="db" is for visualization only (log scale, not linear in x).
     """
     y, sr = librosa.load(filepath, sr=sr, mono=True)
-
     if fmin is None:
         fmin = librosa.note_to_hz("C1")
 
-    cqt = librosa.cqt(
-        y,
-        sr=sr,
-        hop_length=hop_length,
-        fmin=fmin,
-        n_bins=n_bins,
-        bins_per_octave=bins_per_octave,
-    )  # complex, shape: (n_bins, time_frames)
+    C = librosa.cqt(y, sr=sr, hop_length=hop_length, fmin=fmin,
+                    n_bins=n_bins, bins_per_octave=bins_per_octave)
+    mag = np.abs(C)
 
-    spec = np.abs(cqt)
+    if normalize:
+        mag = mag / (mag.max() + 1e-12)
 
-    if to_db:
-        spec = librosa.amplitude_to_db(spec, ref=np.max)
+    if domain == "magnitude":
+        spec = mag
+    elif domain == "power":
+        spec = mag ** 2
+    elif domain == "db":
+        spec = librosa.amplitude_to_db(mag, ref=1.0)   # no max-relative scaling
+    else:
+        raise ValueError(f"unknown domain: {domain}")
 
-    return spec.T  # shape: (time_frames, n_bins)
+    return spec.T
 
 
-if __name__ == "__main__":
-
-
+def generate_spectrograms(domain="power"):
     for filename in tqdm(os.listdir("python-tests/samples")):
         if filename.endswith(".wav"):
             filepath = os.path.join("python-tests/samples", filename)
-            spec = wav_to_cqt_spectrogram(filepath)
+            spec = wav_to_cqt_spectrogram(filepath, domain=domain)
             savename = os.path.splitext(filename)[0] + ".txt"
-            np.savetxt(os.path.join("python-tests/spectograms", savename), spec)
+            if len(filename) == 6:
+                savename = "singlenotes/" + savename
+            np.savetxt(os.path.join(f"python-tests/spectrograms/{domain}", savename), spec)
+
+if __name__ == "__main__":
+    generate_spectrograms()
